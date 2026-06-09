@@ -75,7 +75,7 @@ export default async (req) => {
     const h2h = pickMarket(e, "h2h");
     if (h2h && !existing.has(`${fid}:h2h`)) {
       const o = mapH2H(h2h, e.home_team, e.away_team);
-      if (o) newMarkets.push({ fixture_id: fid, key: "h2h", label: "Match result", outcomes: o });
+      if (o) newMarkets.push({ fixture_id: fid, key: "h2h", label: "Match result", point: null, outcomes: o });
     }
     const tot = pickMarket(e, "totals");
     if (tot && !existing.has(`${fid}:totals`)) {
