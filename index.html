@@ -86,6 +86,7 @@
   .gate{max-width:360px;margin:80px auto;text-align:center}
   @media(max-width:560px){.grid2{grid-template-columns:1fr}.teams{font-size:16px}}
 </style>
+<script src="/config.js"></script>
 </head>
 <body>
 <div id="app"></div>
@@ -93,12 +94,12 @@
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-/* ===================== CONFIG — fill these in ===================== */
-const SUPABASE_URL      = "https://YOUR-PROJECT.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
-const FUNCTIONS_BASE    = "/.netlify/functions"; // same Netlify site
-const ROOM_CODE         = "WC26";
-/* ================================================================= */
+const { SUPABASE_URL, SUPABASE_ANON_KEY, FUNCTIONS_BASE, ROOM_CODE } = window.__CONFIG || {};
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  document.getElementById("app").innerHTML =
+    '<div class="gate"><h2 class="sec">Config missing</h2><p class="hint">Set SUPABASE_URL, SUPABASE_ANON_KEY and ROOM_CODE in Netlify env vars, then redeploy.</p></div>';
+  throw new Error("missing config");
+}
 
 const sbc = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById("app");
