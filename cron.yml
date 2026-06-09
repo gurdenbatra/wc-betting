@@ -1,0 +1,24 @@
+name: WC26 odds + settlement cron
+
+# Free, reliable scheduler. Pings the Netlify functions on a schedule.
+# Times are UTC. Credit budget at these rates ≈ sync 120/mo + settle 240/mo = 360/mo
+# (under the 500 free credits). Adjust if you want fresher odds/results.
+
+on:
+  schedule:
+    - cron: "0 6,18 * * *"        # sync-odds: twice a day
+    - cron: "0 2,8,14,20 * * *"   # settle: four times a day
+  workflow_dispatch: {}            # lets you run it manually from the Actions tab
+
+jobs:
+  sync-odds:
+    if: github.event.schedule == '0 6,18 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS "${{ secrets.SITE_URL }}/.netlify/functions/sync-odds?token=${{ secrets.CRON_SECRET }}"
+
+  settle:
+    if: github.event.schedule == '0 2,8,14,20 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS "${{ secrets.SITE_URL }}/.netlify/functions/settle?token=${{ secrets.CRON_SECRET }}"

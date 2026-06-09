@@ -1,0 +1,11 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Optional: if scheduled functions are available on your plan, you can run them
+# from here instead of the GitHub Action. Free-tier availability is uncertain,
+# so the GitHub Action in .github/workflows/cron.yml is the default trigger.
+# [functions."sync-odds"]
+#   schedule = "0 6,18 * * *"
+# [functions."settle"]
+#   schedule = "0 2,8,14,20 * * *"

@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Matchday Ledger</title>
+<style>
+  :root{
+    --ink:#0b1612;--panel:#11211b;--panel2:#16291f;--line:#274034;--line2:#345244;
+    --txt:#ece6d6;--mut:#8aa090;--gold:#e8b23a;--mint:#62c79a;--red:#e5533c;
+    --mono:"Roboto Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0;background:var(--ink)}
+  body{font-family:var(--sans);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.45;padding-bottom:64px}
+  .wrap{max-width:860px;margin:0 auto;padding:0 16px}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  button{font-family:inherit;cursor:pointer}
+  header.bar{position:sticky;top:0;z-index:20;background:rgba(11,22,18,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .bar .wrap{display:flex;align-items:center;gap:12px;padding:12px 16px}
+  .logo{font-family:var(--mono);font-weight:700;letter-spacing:.06em;font-size:14px}
+  .logo b{color:var(--gold)}
+  .who{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .pill{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);background:var(--panel2);border-radius:999px;padding:6px 12px}
+  .pill .left{color:var(--mint)}
+  select.who-sel{font-family:var(--mono);font-size:12px;background:var(--panel2);color:var(--txt);border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
+  nav.tabs .wrap{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+  .tab{background:none;border:none;color:var(--mut);font-size:13px;padding:14px;border-bottom:2px solid transparent;font-family:var(--mono);letter-spacing:.03em}
+  .tab.on{color:var(--txt);border-bottom-color:var(--gold)}
+  section{padding-top:20px}
+  h2.sec{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
+  .fx{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+  .fx-top{display:flex;align-items:baseline;gap:10px}
+  .stage{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--gold);text-transform:uppercase}
+  .teams{font-size:18px;font-weight:600;margin:3px 0 0}
+  .ko{margin-left:auto;text-align:right}
+  .cd{font-family:var(--mono);font-size:12px;color:var(--mut)} .cd.soon{color:var(--gold)} .cd.live{color:var(--red)}
+  .locked-tag{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:.1em}
+  .mkt{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
+  .mkt-h{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.06em;margin-bottom:8px;display:flex;gap:8px}
+  .mkt-h .res{color:var(--mint)}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opt{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:2px;min-width:80px;align-items:flex-start}
+  .opt:hover:not(:disabled){border-color:var(--gold)} .opt:disabled{opacity:.4;cursor:default}
+  .opt .ol{font-size:12px} .opt .od{font-family:var(--mono);font-size:15px;color:var(--gold);font-weight:600}
+  .opt.win{border-color:var(--mint)} .opt.win .od{color:var(--mint)}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+  .ticket{background:#f5efe0;color:#1c241f;width:100%;max-width:380px;border-radius:12px;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.5)}
+  .tk-h{background:#1c241f;color:#f5efe0;padding:12px 16px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between}
+  .tk-b{padding:16px}
+  .perf{height:0;border-top:2px dashed #c9bfa6;margin:8px 0;position:relative}
+  .perf::before,.perf::after{content:"";position:absolute;top:-9px;width:16px;height:16px;background:var(--ink);border-radius:50%}
+  .perf::before{left:-24px}.perf::after{right:-24px}
+  .tk-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#3a463e}
+  .tk-row b{color:#1c241f;font-family:var(--mono)}
+  .tk-pick{font-size:17px;font-weight:700;margin-bottom:6px}
+  .stake-in{display:flex;gap:8px;align-items:center;margin:10px 0}
+  .stake-in input{flex:1;font-family:var(--mono);font-size:16px;padding:10px 12px;border-radius:8px;border:1px solid #c9bfa6;background:#fff;color:#1c241f}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+  .chip{font-family:var(--mono);font-size:12px;border:1px solid #c9bfa6;background:#fff;border-radius:999px;padding:5px 10px;color:#3a463e}
+  .ret{font-family:var(--mono);font-size:22px;font-weight:700}
+  .tk-actions{display:flex;gap:8px;margin-top:12px}
+  .btn{flex:1;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:600}
+  .btn-go{background:var(--gold);color:#1c241f} .btn-x{background:#e3dac6;color:#3a463e}
+  .lb{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .lb-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .lb-row:last-child{border-bottom:none} .lb-row.me{background:var(--panel2)}
+  .rank{font-family:var(--mono);font-size:13px;color:var(--mut);width:22px} .rank.r1{color:var(--gold)}
+  .lb-name{font-weight:600} .lb-rec{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .lb-net{font-family:var(--mono);font-size:16px;text-align:right} .up{color:var(--mint)} .down{color:var(--red)}
+  .bet{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+  .b-pick{font-size:14px;font-weight:600} .b-sub{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:2px}
+  .b-stat{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid var(--line2)}
+  .b-stat.pending{color:var(--gold);border-color:var(--gold)} .b-stat.won{color:var(--mint);border-color:var(--mint)} .b-stat.lost{color:var(--red);border-color:var(--red)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  label.fld{display:block;font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.06em;margin:10px 0 5px}
+  input.in,select.in{width:100%;font-family:var(--mono);font-size:14px;background:var(--ink);color:var(--txt);border:1px solid var(--line2);border-radius:8px;padding:10px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mini{background:var(--gold);color:#1c241f;border:none;border-radius:8px;padding:10px 14px;font-weight:600;font-size:13px}
+  .mini.ghost{background:none;border:1px solid var(--line2);color:var(--txt)}
+  .opt-row{display:flex;gap:8px;margin-bottom:6px} .opt-row input{flex:1}
+  .share-bar{display:flex;gap:8px;margin-bottom:14px}
+  .share{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line2);color:var(--txt);border-radius:9px;padding:9px 12px}
+  .hint{font-size:12px;color:var(--mut);margin:6px 0 0} .empty{color:var(--mut);font-size:14px;text-align:center;padding:40px 0;font-family:var(--mono)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1c241f;font-weight:600;font-size:13px;padding:11px 18px;border-radius:10px;z-index:60;max-width:90%;text-align:center}
+  .gate{max-width:360px;margin:80px auto;text-align:center}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}.teams{font-size:16px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/* ===================== CONFIG — fill these in ===================== */
+const SUPABASE_URL      = "https://YOUR-PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+const FUNCTIONS_BASE    = "/.netlify/functions"; // same Netlify site
+const ROOM_CODE         = "WC26";
+/* ================================================================= */
+
+const sbc = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const app = document.getElementById("app");
+
+let pool=null, players=[], fixtures=[], bets=[], standings=[];
+let me=null, tab="matches", slip=null, adminTok=null;
+
+async function loadAll(){
+  const { data:p } = await sbc.from("pools").select("*").eq("room_code",ROOM_CODE).single();
+  pool = p;
+  if(!pool){ app.innerHTML = `<div class="gate"><h2 class="sec">No pool "${ROOM_CODE}"</h2><p class="hint">Run schema.sql and check the room code in this file.</p></div>`; return; }
+  const [pl,fx,bt,st] = await Promise.all([
+    sbc.from("players").select("*").eq("pool_id",pool.id).order("name"),
+    sbc.from("fixtures").select("*, markets(*)").eq("pool_id",pool.id).order("commence_time"),
+    sbc.from("bets").select("*").eq("pool_id",pool.id),
+    sbc.from("standings").select("*").eq("pool_id",pool.id),
+  ]);
+  players=pl.data||[]; fixtures=fx.data||[]; bets=bt.data||[]; standings=st.data||[];
+  const saved=localStorage.getItem("wc26me_"+ROOM_CODE);
+  if(saved && players.find(x=>x.id===saved)) me=saved;
+  render();
+}
+function setMe(id){ me=id; localStorage.setItem("wc26me_"+ROOM_CODE,id); render(); }
+
+/* allowance committed by current player for a matchday */
+function committed(matchday){ return bets.filter(b=>b.player_id===me && b.matchday===matchday).reduce((s,b)=>s+Number(b.stake),0); }
+function remaining(matchday){ return Number(pool.daily_allowance) - committed(matchday); }
+function locked(fx){ return Date.now() >= new Date(fx.commence_time).getTime(); }
+function cd(t){
+  const ms=new Date(t)-Date.now();
+  if(ms<=0) return {txt:"KICKED OFF",cls:"live"};
+  const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),s=Math.floor(ms%6e4/1e3);
+  return {txt:"closes in "+(d>0?`${d}d ${h}h ${m}m`:h>0?`${h}h ${m}m ${s}s`:`${m}m ${s}s`),cls:ms<36e5?"soon":""};
+}
+
+async function placeBet(stake){
+  const {fx,mkt,opt}=slip;
+  const { data, error } = await sbc.rpc("place_bet",
+    { p_player:me, p_market:mkt.id, p_option:opt.key, p_stake:stake });
+  if(error){ toast(error.message.replace(/^.*?:\s/,"")); return; }
+  slip=null; await loadAll(); toast("Bet placed");
+}
+
+async function adminCall(payload){
+  const r = await fetch(`${FUNCTIONS_BASE}/admin`,{method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify({...payload, token:adminTok})});
+  if(!r.ok){ toast("Admin: "+(await r.text())); return false; }
+  await loadAll(); return true;
+}
+
+/* ----------------------------- render ----------------------------- */
+function el(html){ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstElementChild; }
+function render(){
+  if(!pool) return;
+  if(!me){ renderGate(); return; }
+  app.innerHTML="";
+  app.appendChild(header());
+  app.appendChild(tabs());
+  const main=el(`<div class="wrap"></div>`);
+  ({matches:vMatches,mybets:vMyBets,table:vTable,admin:vAdmin}[tab])(main);
+  app.appendChild(main);
+  if(slip) app.appendChild(slipEl());
+  startTick();
+}
+function renderGate(){
+  app.innerHTML="";
+  const g=el(`<div class="gate"><div class="logo" style="font-size:18px;margin-bottom:18px">MATCHDAY <b>LEDGER</b></div>
+    <h2 class="sec">Who are you?</h2><div id="pl"></div>
+    <label class="fld" style="margin-top:18px">New player</label>
+    <div class="opt-row"><input class="in" id="newname" placeholder="name"><button class="mini" id="addme">Join</button></div></div>`);
+  const list=g.querySelector("#pl");
+  players.forEach(p=>{ const b=el(`<button class="mini ghost" style="margin:4px;display:inline-block">${p.name}</button>`);
+    b.onclick=()=>setMe(p.id); list.appendChild(b); });
+  g.querySelector("#addme").onclick=async()=>{
+    const name=g.querySelector("#newname").value.trim(); if(!name) return;
+    const {data,error}=await sbc.from("players").insert({pool_id:pool.id,name}).select().single();
+    if(error){ toast(error.message); return; } setMe(data.id);
+  };
+  app.appendChild(g);
+}
+function header(){
+  const today=new Date().toISOString().slice(0,10);
+  const h=el(`<header class="bar"><div class="wrap">
+    <span class="logo">MATCHDAY <b>LEDGER</b></span>
+    <div class="who">
+      <span class="pill">today left <span class="left num">${remaining(today).toFixed(0)}</span></span>
+      <select class="who-sel">${players.map(p=>`<option value="${p.id}" ${p.id===me?"selected":""}>${p.name}</option>`).join("")}</select>
+    </div></div></header>`);
+  h.querySelector("select").onchange=e=>setMe(e.target.value);
+  return h;
+}
+function tabs(){
+  const t=[["matches","Matches"],["mybets","My bets"],["table","Table"],["admin","Admin"]];
+  const n=el(`<nav class="tabs"><div class="wrap">${t.map(([k,l])=>`<button class="tab ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</div></nav>`);
+  n.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
+  return n;
+}
+function vMatches(main){
+  const s=el(`<section><h2 class="sec">Open markets</h2></section>`);
+  const open=fixtures.filter(fx=>(fx.markets||[]).some(m=>m.result===null));
+  if(!open.length) s.appendChild(el(`<div class="empty">No open markets yet. The odds sync will fill these in.</div>`));
+  open.forEach(fx=>s.appendChild(fxCard(fx)));
+  main.appendChild(s);
+}
+function fxCard(fx){
+  const lk=locked(fx); const c=cd(fx.commence_time);
+  const card=el(`<div class="fx"><div class="fx-top">
+      <div><span class="stage">${fx.stage||""}</span><div class="teams">${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}</div></div>
+      <div class="ko">${lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}" data-cd="${fx.commence_time}">${c.txt}</span>`}</div>
+    </div></div>`);
+  (fx.markets||[]).sort((a,b)=>a.key.localeCompare(b.key)).forEach(mkt=>{
+    const settled=mkt.result!==null;
+    const m=el(`<div class="mkt"><div class="mkt-h">${mkt.label}${settled?`<span class="res">✓ ${labelFor(mkt,mkt.result)}</span>`:""}</div><div class="opts"></div></div>`);
+    const opts=m.querySelector(".opts");
+    (mkt.outcomes||[]).forEach(opt=>{
+      const cls=settled&&opt.key===mkt.result?"win":"";
+      const b=el(`<button class="opt ${cls}" ${(lk||settled)?"disabled":""}><span class="ol">${opt.label}</span><span class="od num">${Number(opt.odds).toFixed(2)}</span></button>`);
+      b.onclick=()=>{ slip={fx,mkt,opt}; render(); };
+      opts.appendChild(b);
+    });
+    card.appendChild(m);
+  });
+  return card;
+}
+const labelFor=(m,k)=>(m.outcomes||[]).find(o=>o.key===k)?.label||k;
+
+function slipEl(){
+  const {fx,mkt,opt}=slip; const rem=remaining(fx.matchday);
+  const s=el(`<div class="scrim"><div class="ticket">
+    <div class="tk-h"><span>Bet slip</span><span>${rem.toFixed(0)} left on ${fx.matchday}</span></div>
+    <div class="tk-b">
+      <div class="tk-pick">${opt.label}</div>
+      <div class="tk-row">${mkt.label}<b></b></div>
+      <div class="tk-row">${fx.home} v ${fx.away}<b></b></div>
+      <div class="tk-row">Odds<b class="num">${Number(opt.odds).toFixed(2)}</b></div>
+      <div class="perf"></div>
+      <div class="chips"></div>
+      <div class="stake-in"><input type="number" min="1" value="100"/><span class="num" style="color:#3a463e">pts</span></div>
+      <div class="tk-row">Potential return<span class="ret num" style="color:#1c241f">—</span></div>
+      <div class="tk-actions"><button class="btn btn-x">Cancel</button><button class="btn btn-go">Place bet</button></div>
+    </div></div></div>`);
+  const inp=s.querySelector("input"), ret=s.querySelector(".ret");
+  const up=()=>ret.textContent=((parseFloat(inp.value)||0)*Number(opt.odds)).toFixed(0);
+  inp.oninput=up; up();
+  const chips=s.querySelector(".chips");
+  [50,100,250,"½","Max"].forEach(v=>{ const b=el(`<button class="chip">${v}</button>`);
+    b.onclick=()=>{ inp.value=v==="Max"?Math.floor(rem):v==="½"?Math.floor(rem/2):v; up(); }; chips.appendChild(b); });
+  s.querySelector(".btn-x").onclick=()=>{slip=null;render();};
+  s.onclick=e=>{ if(e.target===s){slip=null;render();} };
+  s.querySelector(".btn-go").onclick=()=>placeBet(Math.round((parseFloat(inp.value)||0)*100)/100);
+  return s;
+}
+function vMyBets(main){
+  const mine=bets.filter(b=>b.player_id===me).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const s=el(`<section><h2 class="sec">My bets</h2></section>`);
+  if(!mine.length) s.appendChild(el(`<div class="empty">No bets yet.</div>`));
+  mine.forEach(b=>{
+    const r=b.status==="won"?`+${(b.stake*(b.odds-1)).toFixed(0)}`:b.status==="lost"?`-${Number(b.stake).toFixed(0)}`:`risk ${Number(b.stake).toFixed(0)}`;
+    const fx=fixtures.find(f=>f.id===b.fixture_id);
+    s.appendChild(el(`<div class="bet"><div style="flex:1"><div class="b-pick">${b.label}</div>
+      <div class="b-sub">${fx?fx.home+" v "+fx.away:""} · @${Number(b.odds).toFixed(2)} · ${r}</div></div>
+      <span class="b-stat ${b.status}">${b.status}</span></div>`));
+  });
+  main.appendChild(s);
+}
+function vTable(main){
+  const s=el(`<section><div class="share-bar">
+    <button class="share" id="st">⧉ Copy table</button><button class="share" id="so">⧉ Copy open markets</button></div>
+    <h2 class="sec">Standings</h2></section>`);
+  const rows=[...standings].sort((a,b)=>Number(b.net)-Number(a.net));
+  const lb=el(`<div class="lb"></div>`);
+  rows.forEach((r,i)=>{
+    const net=Number(r.net), n=net>=0?`<span class="up">+${net.toFixed(0)}</span>`:`<span class="down">${net.toFixed(0)}</span>`;
+    lb.appendChild(el(`<div class="lb-row ${r.player_id===me?"me":""}"><span class="rank ${i===0?"r1":""}">${i+1}</span>
+      <div style="flex:1"><div class="lb-name">${r.name}</div><div class="lb-rec">${r.wins}W · ${r.losses}L · ${r.open_bets} open</div></div>
+      <div class="lb-net">${n}</div></div>`));
+  });
+  s.appendChild(lb);
+  s.querySelector("#st").onclick=()=>copy(tableText(rows));
+  s.querySelector("#so").onclick=()=>copy(openText());
+  main.appendChild(s);
+}
+function tableText(rows){ const md=["🥇","🥈","🥉"];
+  return "⚽ MATCHDAY LEDGER — net\n"+rows.map((r,i)=>`${md[i]||(i+1)+"."} ${r.name} ${Number(r.net)>=0?"+":""}${Number(r.net).toFixed(0)}`).join("\n"); }
+function openText(){
+  let out="⚽ Open markets:\n";
+  fixtures.filter(fx=>!locked(fx)&&(fx.markets||[]).some(m=>m.result===null)).forEach(fx=>{
+    out+=`\n${fx.home} v ${fx.away} (${cd(fx.commence_time).txt})`;
+    (fx.markets||[]).filter(m=>m.result===null).forEach(m=>{ out+=`\n  ${m.label}: `+m.outcomes.map(o=>`${o.label} @${Number(o.odds).toFixed(2)}`).join(" / "); });
+    out+="\n";
+  }); return out;
+}
+function copy(t){ navigator.clipboard?.writeText(t).then(()=>toast("Copied — paste in WhatsApp"),()=>toast("Copy failed")); }
+
+function vAdmin(main){
+  const s=el(`<section></section>`);
+  if(!adminTok){
+    const g=el(`<div class="gate"><h2 class="sec">Admin</h2>
+      <p class="hint">For fun props the odds API doesn't cover, and manual settlement. Token is your ADMIN_SECRET.</p>
+      <input class="in" id="tok" type="password" placeholder="admin token" style="text-align:center;margin:12px 0"/>
+      <button class="mini" id="go" style="width:100%">Unlock</button></div>`);
+    g.querySelector("#go").onclick=()=>{ adminTok=g.querySelector("#tok").value.trim(); render(); };
+    s.appendChild(g); main.appendChild(s); return;
+  }
+  // create custom market
+  const live=fixtures.filter(fx=>(fx.markets||[]).every(m=>true));
+  const c=el(`<div class="card"><h2 class="sec">Add a fun bet</h2>
+    <label class="fld">Match</label><select class="in" id="cm_fx">${fixtures.map(f=>`<option value="${f.id}">${f.home} v ${f.away}</option>`).join("")}</select>
+    <label class="fld">Type</label><select class="in" id="cm_key"><option value="custom">Custom prop (settle by hand)</option><option value="btts">Both teams to score (auto)</option><option value="cs">Correct score (auto)</option></select>
+    <label class="fld">Question</label><input class="in" id="cm_label" placeholder="e.g. Red card in the match?">
+    <label class="fld">Options (label · odds · key)</label><div id="cm_opts">
+      <div class="opt-row"><input class="in" value="Yes"><input class="in" type="number" step="0.01" value="2.0" style="max-width:80px"><input class="in" value="yes" style="max-width:80px"></div>
+      <div class="opt-row"><input class="in" value="No"><input class="in" type="number" step="0.01" value="1.7" style="max-width:80px"><input class="in" value="no" style="max-width:80px"></div></div>
+    <button class="mini ghost" id="cm_add" style="margin-top:4px">+ option</button>
+    <button class="mini" id="cm_save" style="margin-top:12px;width:100%">Create market</button>
+    <p class="hint">For "Correct score (auto)", use option keys like 1-0, 2-1 and add an "other" key as catch-all.</p></div>`);
+  c.querySelector("#cm_add").onclick=()=>c.querySelector("#cm_opts").appendChild(
+    el(`<div class="opt-row"><input class="in" placeholder="label"><input class="in" type="number" step="0.01" placeholder="odds" style="max-width:80px"><input class="in" placeholder="key" style="max-width:80px"></div>`));
+  c.querySelector("#cm_save").onclick=async()=>{
+    const key=c.querySelector("#cm_key").value;
+    const outcomes=[...c.querySelectorAll("#cm_opts .opt-row")].map(r=>{const [l,o,k]=r.querySelectorAll("input");
+      return {key:(k.value||l.value).trim().toLowerCase(),label:l.value.trim(),odds:parseFloat(o.value)||2};}).filter(o=>o.label);
+    if(outcomes.length<2) return toast("Need 2+ options");
+    const ok=await adminCall({action:"create_market",fixture_id:c.querySelector("#cm_fx").value,
+      key,label:c.querySelector("#cm_label").value.trim()||"Prop",outcomes});
+    if(ok) toast("Market created");
+  };
+  s.appendChild(c);
+  // manual settle (non-auto open markets)
+  const manual=[]; fixtures.forEach(fx=>(fx.markets||[]).forEach(m=>{ if(m.result===null && m.auto===false) manual.push({fx,m}); }));
+  const ms=el(`<div class="card"><h2 class="sec">Settle props by hand</h2></div>`);
+  if(!manual.length) ms.appendChild(el(`<p class="hint">Nothing waiting. Standard markets auto-settle from the score.</p>`));
+  manual.forEach(({fx,m})=>{
+    const row=el(`<div style="margin-top:10px"><div class="b-sub">${fx.home} v ${fx.away}</div><label class="fld">${m.label} — winner</label><div class="opts"></div></div>`);
+    m.outcomes.forEach(o=>{ const b=el(`<button class="opt"><span class="ol">${o.label}</span></button>`);
+      b.onclick=async()=>{ if(await adminCall({action:"settle_market",market_id:m.id,result:o.key})) toast("Settled"); };
+      row.querySelector(".opts").appendChild(b); });
+    ms.appendChild(row);
+  });
+  s.appendChild(ms);
+  main.appendChild(s);
+}
+
+/* countdown + polling */
+let tickT;
+function startTick(){ clearInterval(tickT); tickT=setInterval(()=>{
+  document.querySelectorAll("[data-cd]").forEach(e=>{const r=cd(e.dataset.cd);e.textContent=r.txt;e.className="cd "+r.cls;});
+},1000); }
+setInterval(()=>{ if(!slip) loadAll(); }, 20000); // refresh from server
+
+let toastT; function toast(msg){ const o=document.querySelector(".toast"); if(o)o.remove();
+  const e=el(`<div class="toast">${msg}</div>`); document.body.appendChild(e); clearTimeout(toastT); toastT=setTimeout(()=>e.remove(),2600); }
+
+loadAll();
+</script>
+</body>
+</html>
