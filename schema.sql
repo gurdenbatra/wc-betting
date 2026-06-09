@@ -153,7 +153,14 @@ create policy ins_players on players for insert with check (true);
 
 -- bets can only be created through place_bet(); fixtures/markets only via service role
 grant execute on function place_bet(uuid, uuid, text, numeric) to anon, authenticated;
+
+-- table-level privileges for the API roles (publishable key -> anon).
+-- RLS policies above sit on top of these; reads stay governed by the select policies.
+grant usage on schema public to anon, authenticated;
+grant select on pools, players, fixtures, markets, bets to anon, authenticated;
 grant select on standings to anon, authenticated;
+grant insert on players to anon, authenticated;   -- joining the pool
+alter default privileges in schema public grant select on tables to anon, authenticated;
 
 -- ============================================================
 -- SEED a pool. Edit the names, then note the printed pool id +
