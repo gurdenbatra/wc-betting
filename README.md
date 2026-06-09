@@ -46,13 +46,8 @@ two Netlify functions triggered by a GitHub Actions cron.
 - **The kickoff lock is server-side** (checked in `place_bet` against the database
   clock), so it isn't bypassable from the browser — but it depends on the fixture's
   `commence_time` being correct from the odds feed.
-- [Unverified] The exact World Cup sport key on The Odds API — confirm via `/v4/sports`
-  (step 2). The code defaults to `soccer_fifa_world_cup`.
 - [Unverified] Netlify scheduled-function availability on the free tier is disputed,
   which is why scheduling runs through GitHub Actions instead.
-- [Inference] Opening odds are snapshotted once per fixture and not continuously
-  updated, so everyone bets the same posted line. Change `sync-odds` if you'd rather
-  refresh prices.
 - **Auto-settlement** covers anything derivable from the final score (result, totals,
   both-teams-to-score, correct score). First-scorer / cards / "who busts first" are
   created and settled by hand in the Admin panel.
