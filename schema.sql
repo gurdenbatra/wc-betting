@@ -170,8 +170,11 @@ insert into pools (name, room_code, daily_allowance)
 values ('World Cup 2026', 'WC26', 1000)
 on conflict (room_code) do nothing;
 
+-- Gurden runs the pool as bookie (house) — not a player.
+-- To remove Gurden from an existing install:
+--   delete from players where name='Gurden' and pool_id=(select id from pools where room_code='WC26');
 insert into players (pool_id, name)
-select id, n from pools, unnest(array['Gurden','Ganz','Sandy','Ishu','Nabil','Kundra']) n
+select id, n from pools, unnest(array['Ganz','Sandy','Ishu','Nabil','Kundra']) n
 where pools.room_code = 'WC26'
 on conflict do nothing;
 

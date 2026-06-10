@@ -119,7 +119,7 @@ async function loadAll(){
   ]);
   players=pl.data||[]; fixtures=fx.data||[]; bets=bt.data||[]; standings=st.data||[];
   const saved=localStorage.getItem("wc26me_"+ROOM_CODE);
-  if(saved && players.find(x=>x.id===saved)) me=saved;
+  if(saved && (saved==="bookie" || players.find(x=>x.id===saved))) me=saved;
   render();
 }
 function setMe(id){ me=id; localStorage.setItem("wc26me_"+ROOM_CODE,id); render(); }
@@ -127,6 +127,7 @@ function setMe(id){ me=id; localStorage.setItem("wc26me_"+ROOM_CODE,id); render(
 /* allowance committed by current player for a matchday */
 function committed(matchday){ return bets.filter(b=>b.player_id===me && b.matchday===matchday).reduce((s,b)=>s+Number(b.stake),0); }
 function remaining(matchday){ return Number(pool.daily_allowance) - committed(matchday); }
+function housePnl(){ return -standings.reduce((s,r)=>s+Number(r.net),0); }
 function locked(fx){ return Date.now() >= new Date(fx.commence_time).getTime(); }
 function cd(t){
   const ms=new Date(t)-Date.now();
@@ -178,15 +179,28 @@ function renderGate(){
     const {data,error}=await sbc.from("players").insert({pool_id:pool.id,name}).select().single();
     if(error){ toast(error.message); return; } setMe(data.id);
   };
+  const bkDiv=el(`<div style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px">
+    <p class="hint" style="margin:0 0 10px;text-align:center">Running the pool? Enter as the house.</p>
+    <button class="mini" id="asbookie" style="width:100%;background:transparent;border:1px solid var(--gold);color:var(--gold)">👑 Continue as Bookie</button>
+  </div>`);
+  bkDiv.querySelector("#asbookie").onclick=()=>setMe("bookie");
+  g.appendChild(bkDiv);
   app.appendChild(g);
 }
 function header(){
   const today=new Date().toISOString().slice(0,10);
+  const isBookie=me==="bookie";
+  const hn=housePnl();
+  const pillHtml=isBookie
+    ?`house P&L <span class="left num" style="color:${hn>=0?"var(--mint)":"var(--red)"}">${hn>=0?"+":""}${hn.toFixed(0)}</span>`
+    :`today left <span class="left num">${remaining(today).toFixed(0)}</span>`;
+  const selOpts=`<option value="bookie" ${isBookie?"selected":""}>👑 Bookie</option>`
+    +players.map(p=>`<option value="${p.id}" ${p.id===me?"selected":""}>${p.name}</option>`).join("");
   const h=el(`<header class="bar"><div class="wrap">
     <span class="logo">MATCHDAY <b>LEDGER</b></span>
     <div class="who">
-      <span class="pill">today left <span class="left num">${remaining(today).toFixed(0)}</span></span>
-      <select class="who-sel">${players.map(p=>`<option value="${p.id}" ${p.id===me?"selected":""}>${p.name}</option>`).join("")}</select>
+      <span class="pill">${pillHtml}</span>
+      <select class="who-sel">${selOpts}</select>
     </div></div></header>`);
   h.querySelector("select").onchange=e=>setMe(e.target.value);
   return h;
@@ -217,7 +231,7 @@ function fxCard(fx){
     (mkt.outcomes||[]).forEach(opt=>{
       const cls=settled&&opt.key===mkt.result?"win":"";
       const b=el(`<button class="opt ${cls}" ${(lk||settled)?"disabled":""}><span class="ol">${opt.label}</span><span class="od num">${Number(opt.odds).toFixed(2)}</span></button>`);
-      b.onclick=()=>{ slip={fx,mkt,opt}; render(); };
+      b.onclick=()=>{ if(me==="bookie") return; slip={fx,mkt,opt}; render(); };
       opts.appendChild(b);
     });
     card.appendChild(m);
@@ -253,14 +267,18 @@ function slipEl(){
   return s;
 }
 function vMyBets(main){
-  const mine=bets.filter(b=>b.player_id===me).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  const s=el(`<section><h2 class="sec">My bets</h2></section>`);
-  if(!mine.length) s.appendChild(el(`<div class="empty">No bets yet.</div>`));
+  const isBookie=me==="bookie";
+  const mine=isBookie
+    ?[...bets].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))
+    :bets.filter(b=>b.player_id===me).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const s=el(`<section><h2 class="sec">${isBookie?"All bets (house view)":"My bets"}</h2></section>`);
+  if(!mine.length) s.appendChild(el(`<div class="empty">No bets placed yet.</div>`));
   mine.forEach(b=>{
     const r=b.status==="won"?`+${(b.stake*(b.odds-1)).toFixed(0)}`:b.status==="lost"?`-${Number(b.stake).toFixed(0)}`:`risk ${Number(b.stake).toFixed(0)}`;
     const fx=fixtures.find(f=>f.id===b.fixture_id);
+    const pname=isBookie?(players.find(p=>p.id===b.player_id)?.name||"?")+` · `:"";
     s.appendChild(el(`<div class="bet"><div style="flex:1"><div class="b-pick">${b.label}</div>
-      <div class="b-sub">${fx?fx.home+" v "+fx.away:""} · @${Number(b.odds).toFixed(2)} · ${r}</div></div>
+      <div class="b-sub">${pname}${fx?fx.home+" v "+fx.away:""} · @${Number(b.odds).toFixed(2)} · ${r}</div></div>
       <span class="b-stat ${b.status}">${b.status}</span></div>`));
   });
   main.appendChild(s);
@@ -271,6 +289,10 @@ function vTable(main){
     <h2 class="sec">Standings</h2></section>`);
   const rows=[...standings].sort((a,b)=>Number(b.net)-Number(a.net));
   const lb=el(`<div class="lb"></div>`);
+  const hn=housePnl(), hnStr=hn>=0?`<span class="up">+${hn.toFixed(0)}</span>`:`<span class="down">${hn.toFixed(0)}</span>`;
+  lb.appendChild(el(`<div class="lb-row ${me==="bookie"?"me":""}" style="border-left:3px solid var(--gold)"><span class="rank" style="font-size:14px">👑</span>
+    <div style="flex:1"><div class="lb-name" style="color:var(--gold)">House</div><div class="lb-rec">bookie</div></div>
+    <div class="lb-net">${hnStr}</div></div>`));
   rows.forEach((r,i)=>{
     const net=Number(r.net), n=net>=0?`<span class="up">+${net.toFixed(0)}</span>`:`<span class="down">${net.toFixed(0)}</span>`;
     lb.appendChild(el(`<div class="lb-row ${r.player_id===me?"me":""}"><span class="rank ${i===0?"r1":""}">${i+1}</span>
@@ -327,6 +349,33 @@ function vAdmin(main){
       key,label:c.querySelector("#cm_label").value.trim()||"Prop",outcomes});
     if(ok) toast("Market created");
   };
+  // trending prop presets — click fills the form, adjust odds then hit Create
+  const PRESETS=[
+    {q:"🟥 Red card in the match?",        opts:[{l:"Yes",o:4.50,k:"yes"},{l:"No",o:1.18,k:"no"}]},
+    {q:"⚽ Goal in first 10 minutes?",      opts:[{l:"Yes",o:2.80,k:"yes"},{l:"No",o:1.40,k:"no"}]},
+    {q:"🎯 Penalty kick in this match?",    opts:[{l:"Yes",o:2.00,k:"yes"},{l:"No",o:1.80,k:"no"}]},
+    {q:"📺 VAR overturns a decision?",      opts:[{l:"Yes",o:2.60,k:"yes"},{l:"No",o:1.50,k:"no"}]},
+    {q:"📋 3+ bookings in the match?",      opts:[{l:"Yes",o:2.10,k:"yes"},{l:"No",o:1.70,k:"no"}]},
+    {q:"🔄 Come-from-behind winner?",       opts:[{l:"Yes",o:3.50,k:"yes"},{l:"No",o:1.25,k:"no"}]},
+    {q:"🏃 Winning margin exactly 1 goal?", opts:[{l:"Yes",o:2.40,k:"yes"},{l:"No",o:1.55,k:"no"}]},
+    {q:"💤 Goalless draw (0-0)?",           opts:[{l:"Yes",o:5.00,k:"yes"},{l:"No",o:1.15,k:"no"}]},
+    {q:"🎪 4+ goals in the match?",         opts:[{l:"Yes",o:3.20,k:"yes"},{l:"No",o:1.32,k:"no"}]},
+    {q:"👟 Goalscorer also gets booked?",   opts:[{l:"Yes",o:4.00,k:"yes"},{l:"No",o:1.22,k:"no"}]},
+    {q:"🌍 Host nation scores first?",      opts:[{l:"Yes",o:1.90,k:"yes"},{l:"No",o:1.90,k:"no"}]},
+    {q:"🧤 Home goalkeeper saves 5+?",      opts:[{l:"Yes",o:3.00,k:"yes"},{l:"No",o:1.38,k:"no"}]},
+  ];
+  const pd=el(`<div style="border-bottom:1px dashed var(--line);padding-bottom:14px;margin-bottom:2px"><label class="fld" style="margin-top:0">Trending props — click to fill form below</label><div style="display:flex;flex-wrap:wrap;gap:5px"></div></div>`);
+  const ptgt=pd.querySelector("div");
+  PRESETS.forEach(p=>{
+    const btn=el(`<button class="chip" style="font-size:11px;padding:4px 9px">${p.q}</button>`);
+    btn.onclick=()=>{
+      c.querySelector("#cm_label").value=p.q;
+      const od=c.querySelector("#cm_opts"); od.innerHTML="";
+      p.opts.forEach(o=>od.appendChild(el(`<div class="opt-row"><input class="in" value="${o.l}"><input class="in" type="number" step="0.01" value="${o.o}" style="max-width:80px"><input class="in" value="${o.k}" style="max-width:80px"></div>`)));
+    };
+    ptgt.appendChild(btn);
+  });
+  c.insertBefore(pd, c.querySelector("label.fld"));
   s.appendChild(c);
   // manual settle (non-auto open markets)
   const manual=[]; fixtures.forEach(fx=>(fx.markets||[]).forEach(m=>{ if(m.result===null && m.auto===false) manual.push({fx,m}); }));
