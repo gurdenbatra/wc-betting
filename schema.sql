@@ -98,7 +98,7 @@ create or replace function place_bet(
 language plpgsql security definer set search_path = public as $$
 declare
   m markets; f fixtures; o jsonb;
-  v_odds numeric; v_label text; v_alloc numeric; v_committed numeric; v_bet bets;
+  v_odds numeric; v_label text; v_bet bets;
 begin
   select * into m from markets where id = p_market;
   if not found then raise exception 'Market not found'; end if;
@@ -118,15 +118,6 @@ begin
   if p_stake <= 0 then raise exception 'Stake must be above zero'; end if;
   v_odds  := (o->>'odds')::numeric;
   v_label := o->>'label';
-
-  select daily_allowance into v_alloc from pools where id = f.pool_id;
-  select coalesce(sum(stake), 0) into v_committed
-  from bets where player_id = p_player and matchday = f.matchday;
-
-  if v_committed + p_stake > v_alloc then
-    raise exception 'Over the daily allowance: % of % already staked for %',
-      v_committed, v_alloc, f.matchday;
-  end if;
 
   insert into bets(pool_id, player_id, fixture_id, market_id, option_key, label, stake, odds, matchday)
   values (f.pool_id, p_player, f.id, m.id, p_option, v_label, p_stake, v_odds, f.matchday)

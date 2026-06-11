@@ -124,9 +124,8 @@ async function loadAll(){
 }
 function setMe(id){ me=id; localStorage.setItem("wc26me_"+ROOM_CODE,id); render(); }
 
-/* allowance committed by current player for a matchday */
-function committed(matchday){ return bets.filter(b=>b.player_id===me && b.matchday===matchday).reduce((s,b)=>s+Number(b.stake),0); }
-function remaining(matchday){ return Number(pool.daily_allowance) - committed(matchday); }
+/* total staked by current player for a matchday (informational only — no cap) */
+function staked(matchday){ return bets.filter(b=>b.player_id===me && b.matchday===matchday).reduce((s,b)=>s+Number(b.stake),0); }
 function housePnl(){ return -standings.reduce((s,r)=>s+Number(r.net),0); }
 function locked(fx){ return Date.now() >= new Date(fx.commence_time).getTime(); }
 function cd(t){
@@ -193,7 +192,7 @@ function header(){
   const hn=housePnl();
   const pillHtml=isBookie
     ?`house P&L <span class="left num" style="color:${hn>=0?"var(--mint)":"var(--red)"}">${hn>=0?"+":""}${hn.toFixed(0)}</span>`
-    :`today left <span class="left num">${remaining(today).toFixed(0)}</span>`;
+    :`staked today <span class="left num">${staked(today).toFixed(0)}</span>`;
   const selOpts=`<option value="bookie" ${isBookie?"selected":""}>👑 Bookie</option>`
     +players.map(p=>`<option value="${p.id}" ${p.id===me?"selected":""}>${p.name}</option>`).join("");
   const h=el(`<header class="bar"><div class="wrap">
@@ -241,9 +240,9 @@ function fxCard(fx){
 const labelFor=(m,k)=>(m.outcomes||[]).find(o=>o.key===k)?.label||k;
 
 function slipEl(){
-  const {fx,mkt,opt}=slip; const rem=remaining(fx.matchday);
+  const {fx,mkt,opt}=slip;
   const s=el(`<div class="scrim"><div class="ticket">
-    <div class="tk-h"><span>Bet slip</span><span>${rem.toFixed(0)} left on ${fx.matchday}</span></div>
+    <div class="tk-h"><span>Bet slip</span><span>${fx.matchday}</span></div>
     <div class="tk-b">
       <div class="tk-pick">${opt.label}</div>
       <div class="tk-row">${mkt.label}<b></b></div>
@@ -259,8 +258,8 @@ function slipEl(){
   const up=()=>ret.textContent=((parseFloat(inp.value)||0)*Number(opt.odds)).toFixed(0);
   inp.oninput=up; up();
   const chips=s.querySelector(".chips");
-  [50,100,250,"½","Max"].forEach(v=>{ const b=el(`<button class="chip">${v}</button>`);
-    b.onclick=()=>{ inp.value=v==="Max"?Math.floor(rem):v==="½"?Math.floor(rem/2):v; up(); }; chips.appendChild(b); });
+  [50,100,250,500,1000].forEach(v=>{ const b=el(`<button class="chip">${v}</button>`);
+    b.onclick=()=>{ inp.value=v; up(); }; chips.appendChild(b); });
   s.querySelector(".btn-x").onclick=()=>{slip=null;render();};
   s.onclick=e=>{ if(e.target===s){slip=null;render();} };
   s.querySelector(".btn-go").onclick=()=>placeBet(Math.round((parseFloat(inp.value)||0)*100)/100);
