@@ -280,11 +280,19 @@ function vMyBets(main){
   const s=el(`<section><h2 class="sec">${isBookie?"All bets (house view)":"My bets"}</h2></section>`);
   if(!mine.length) s.appendChild(el(`<div class="empty">No bets placed yet.</div>`));
   mine.forEach(b=>{
-    const r=b.status==="won"?`+${(b.stake*(b.odds-1)).toFixed(0)}`:b.status==="lost"?`-${Number(b.stake).toFixed(0)}`:`risk ${Number(b.stake).toFixed(0)}`;
+    const stake=Number(b.stake), odds=Number(b.odds);
+    const profit=(stake*(odds-1)).toFixed(0);
+    const stakeStr=`${stake.toFixed(0)} staked`;
+    const outcome=b.status==="won"
+      ?`<span style="color:var(--mint)">+${profit} profit</span>`
+      :b.status==="lost"
+      ?`<span style="color:var(--red)">-${stake.toFixed(0)} lost</span>`
+      :`<span style="color:var(--gold)">pending</span>`;
     const fx=fixtures.find(f=>f.id===b.fixture_id);
     const pname=isBookie?(players.find(p=>p.id===b.player_id)?.name||"?")+` · `:"";
     s.appendChild(el(`<div class="bet"><div style="flex:1"><div class="b-pick">${b.label}</div>
-      <div class="b-sub">${pname}${fx?fx.home+" v "+fx.away:""} · @${Number(b.odds).toFixed(2)} · ${r}</div></div>
+      <div class="b-sub">${pname}${fx?fx.home+" v "+fx.away:""} · @${odds.toFixed(2)}</div>
+      <div class="b-sub" style="margin-top:3px">${stakeStr} · ${outcome}</div></div>
       <span class="b-stat ${b.status}">${b.status}</span></div>`));
   });
   main.appendChild(s);
@@ -380,8 +388,26 @@ function vAdmin(main){
     g.querySelector("#go").onclick=()=>{ adminTok=g.querySelector("#tok").value.trim(); render(); };
     s.appendChild(g); main.appendChild(s); return;
   }
+  // settlement
+  const settleCard=el(`<div class="card"><h2 class="sec">Settlement</h2>
+    <p class="hint" style="margin-bottom:12px">Pulls final scores from The Odds API and settles all completed h2h + totals markets automatically. Run after each match ends.</p>
+    <button class="mini" id="do-settle" style="width:100%">⚡ Run settlement now</button>
+    <p class="hint" id="settle-res" style="margin-top:8px;min-height:16px"></p></div>`);
+  settleCard.querySelector("#do-settle").onclick=async()=>{
+    const btn=settleCard.querySelector("#do-settle"), res=settleCard.querySelector("#settle-res");
+    btn.textContent="Running…"; btn.disabled=true;
+    try{
+      const r=await fetch(`${FUNCTIONS_BASE}/settle?token=${adminTok}`);
+      const j=await r.json().catch(()=>({}));
+      res.textContent=r.ok
+        ?`Done — ${j.settled_markets} market${j.settled_markets===1?"":"s"} settled · ${j.credits_remaining} API credits left`
+        :`Error ${r.status} — check Netlify logs`;
+      if(r.ok) loadAll();
+    }catch(e){ res.textContent=String(e); }
+    btn.textContent="⚡ Run settlement now"; btn.disabled=false;
+  };
+  s.appendChild(settleCard);
   // create custom market
-  const live=fixtures.filter(fx=>(fx.markets||[]).every(m=>true));
   const c=el(`<div class="card"><h2 class="sec">Add a fun bet</h2>
     <label class="fld">Match</label><select class="in" id="cm_fx">${fixtures.map(f=>`<option value="${f.id}">${f.home} v ${f.away}</option>`).join("")}</select>
     <label class="fld">Type</label><select class="in" id="cm_key"><option value="custom">Custom prop (settle by hand)</option><option value="btts">Both teams to score (auto)</option><option value="cs">Correct score (auto)</option></select>
