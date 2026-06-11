@@ -82,6 +82,13 @@
   .share-bar{display:flex;gap:8px;margin-bottom:14px}
   .share{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line2);color:var(--txt);border-radius:9px;padding:9px 12px}
   .hint{font-size:12px;color:var(--mut);margin:6px 0 0} .empty{color:var(--mut);font-size:14px;text-align:center;padding:40px 0;font-family:var(--mono)}
+  .action-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .action-col{flex:1;min-width:90px;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:10px 12px}
+  .action-col-head{font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline}
+  .action-col-head .ao{color:var(--gold);font-weight:600}
+  .action-item{font-size:13px;font-weight:600;padding:3px 0;display:flex;justify-content:space-between;align-items:baseline}
+  .action-item.mine{color:var(--gold)}
+  .action-item .aps{font-family:var(--mono);font-size:11px;color:var(--mut);font-weight:400}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1c241f;font-weight:600;font-size:13px;padding:11px 18px;border-radius:10px;z-index:60;max-width:90%;text-align:center}
   .gate{max-width:360px;margin:80px auto;text-align:center}
   @media(max-width:560px){.grid2{grid-template-columns:1fr}.teams{font-size:16px}}
@@ -159,7 +166,7 @@ function render(){
   app.appendChild(header());
   app.appendChild(tabs());
   const main=el(`<div class="wrap"></div>`);
-  ({matches:vMatches,mybets:vMyBets,table:vTable,admin:vAdmin}[tab])(main);
+  ({matches:vMatches,mybets:vMyBets,table:vTable,action:vAction,admin:vAdmin}[tab])(main);
   app.appendChild(main);
   if(slip) app.appendChild(slipEl());
   startTick();
@@ -205,7 +212,7 @@ function header(){
   return h;
 }
 function tabs(){
-  const t=[["matches","Matches"],["mybets","My bets"],["table","Table"],["admin","Admin"]];
+  const t=[["matches","Matches"],["mybets","My bets"],["table","Table"],["action","Action"],["admin","Admin"]];
   const n=el(`<nav class="tabs"><div class="wrap">${t.map(([k,l])=>`<button class="tab ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</div></nav>`);
   n.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
   return n;
@@ -315,6 +322,54 @@ function openText(){
 }
 function copy(t){ navigator.clipboard?.writeText(t).then(()=>toast("Copied — paste in WhatsApp"),()=>toast("Copy failed")); }
 
+function vAction(main){
+  const s=el(`<section><h2 class="sec">Today's action</h2></section>`);
+  const pending=bets.filter(b=>b.status==="pending");
+  if(!pending.length){ s.appendChild(el(`<div class="empty">No active bets yet — be first.</div>`)); main.appendChild(s); return; }
+
+  const byFx={};
+  pending.forEach(b=>{ (byFx[b.fixture_id]||(byFx[b.fixture_id]=[])).push(b); });
+
+  const activeFx=fixtures
+    .filter(fx=>byFx[fx.id])
+    .sort((a,b)=>new Date(a.commence_time)-new Date(b.commence_time));
+
+  activeFx.forEach(fx=>{
+    const fxBets=byFx[fx.id];
+    const lk=locked(fx); const c=cd(fx.commence_time);
+    const card=el(`<div class="fx"><div class="fx-top">
+      <div><span class="stage">${fx.stage||""}</span><div class="teams">${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}</div></div>
+      <div class="ko">${lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}">${c.txt}</span>`}</div>
+    </div></div>`);
+
+    const byMkt={};
+    fxBets.forEach(b=>{ (byMkt[b.market_id]||(byMkt[b.market_id]=[])).push(b); });
+
+    Object.entries(byMkt).forEach(([mktId,mBets])=>{
+      const mkt=(fx.markets||[]).find(m=>m.id===mktId); if(!mkt) return;
+      const byOpt={};
+      mBets.forEach(b=>{ (byOpt[b.option_key]||(byOpt[b.option_key]=[])).push(b); });
+      const totalStaked=mBets.reduce((s,b)=>s+Number(b.stake),0);
+
+      const m=el(`<div class="mkt"><div class="mkt-h">${mkt.label}<span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--mut)">${totalStaked.toFixed(0)} pts in pool</span></div><div class="action-grid"></div></div>`);
+      const grid=m.querySelector(".action-grid");
+
+      (mkt.outcomes||[]).forEach(opt=>{
+        const optBets=byOpt[opt.key]||[]; if(!optBets.length) return;
+        const col=el(`<div class="action-col"><div class="action-col-head"><span>${opt.label}</span><span class="ao">${Number(opt.odds).toFixed(2)}</span></div></div>`);
+        optBets.forEach(b=>{
+          const pname=players.find(p=>p.id===b.player_id)?.name||"?";
+          col.appendChild(el(`<div class="action-item ${b.player_id===me?"mine":""}"><span>${pname}</span><span class="aps">${Number(b.stake).toFixed(0)}</span></div>`));
+        });
+        grid.appendChild(col);
+      });
+
+      card.appendChild(m);
+    });
+    s.appendChild(card);
+  });
+  main.appendChild(s);
+}
 function vAdmin(main){
   const s=el(`<section></section>`);
   if(!adminTok){
