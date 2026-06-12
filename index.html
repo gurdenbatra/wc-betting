@@ -147,7 +147,10 @@ async function placeBet(stake){
   const { data, error } = await sbc.rpc("place_bet",
     { p_player:me, p_market:mkt.id, p_option:opt.key, p_stake:stake });
   if(error){ toast(error.message.replace(/^.*?:\s/,"")); return; }
-  slip=null; await loadAll(); toast("Bet placed");
+  const placed={opt,stake};
+  slip=null; render();
+  toast(`✓ ${placed.opt.label} @${Number(placed.opt.odds).toFixed(2)} · ${Number(placed.stake).toFixed(0)} pts`);
+  loadAll();
 }
 
 async function adminCall(payload){
