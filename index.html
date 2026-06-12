@@ -112,7 +112,7 @@ const sbc = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById("app");
 
 let pool=null, players=[], fixtures=[], bets=[], standings=[];
-let me=null, tab="matches", slip=null, adminTok=null;
+let me=null, tab="matches", slip=null, adminTok=null, betFilter="all";
 
 async function loadAll(){
   const { data:p } = await sbc.from("pools").select("*").eq("room_code",ROOM_CODE).single();
@@ -274,11 +274,23 @@ function slipEl(){
 }
 function vMyBets(main){
   const isBookie=me==="bookie";
-  const mine=isBookie
+  const all=isBookie
     ?[...bets].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))
     :bets.filter(b=>b.player_id===me).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const mine=betFilter==="pending"?all.filter(b=>b.status==="pending")
+    :betFilter==="done"?all.filter(b=>b.status==="won"||b.status==="lost")
+    :all;
   const s=el(`<section><h2 class="sec">${isBookie?"All bets (house view)":"My bets"}</h2></section>`);
-  if(!mine.length) s.appendChild(el(`<div class="empty">No bets placed yet.</div>`));
+  // filter pills
+  const filters=el(`<div style="display:flex;gap:6px;margin-bottom:14px"></div>`);
+  ["all","pending","done"].forEach(f=>{
+    const active=betFilter===f;
+    const btn=el(`<button class="chip" style="font-size:12px;padding:5px 14px;${active?"background:var(--gold);color:#1c241f;border-color:var(--gold)":""}">${f.charAt(0).toUpperCase()+f.slice(1)}</button>`);
+    btn.onclick=()=>{betFilter=f;render();};
+    filters.appendChild(btn);
+  });
+  s.appendChild(filters);
+  if(!mine.length) s.appendChild(el(`<div class="empty">No ${betFilter==="all"?"":""}${betFilter} bets.</div>`));
   mine.forEach(b=>{
     const stake=Number(b.stake), odds=Number(b.odds);
     const profit=(stake*(odds-1)).toFixed(0);
