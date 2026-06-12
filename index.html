@@ -425,6 +425,8 @@ function vAdmin(main){
     const outcomes=[...c.querySelectorAll("#cm_opts .opt-row")].map(r=>{const [l,o,k]=r.querySelectorAll("input");
       return {key:(k.value||l.value).trim().toLowerCase(),label:l.value.trim(),odds:parseFloat(o.value)||2};}).filter(o=>o.label);
     if(outcomes.length<2) return toast("Need 2+ options");
+    const badOdds=outcomes.find(o=>o.odds<1.01);
+    if(badOdds) return toast(`Odds for "${badOdds.label}" must be ≥ 1.01 (decimal format — e.g. 1.5 means +50% profit)`);
     const ok=await adminCall({action:"create_market",fixture_id:c.querySelector("#cm_fx").value,
       key,label:c.querySelector("#cm_label").value.trim()||"Prop",outcomes});
     if(ok) toast("Market created");
