@@ -6,12 +6,13 @@
 // Cost note: markets(h2h,totals) x regions(eu) = 2 credits per call. The /events
 // part is free; only /odds is charged. Watch x-requests-remaining in the response log.
 
-const ODDS_KEY   = process.env.ODDS_API_KEY;
-const SPORT      = process.env.ODDS_SPORT_KEY || "soccer_fifa_world_cup"; // verify via /v4/sports
-const SB_URL     = process.env.SUPABASE_URL;
-const SB_KEY     = process.env.SUPABASE_SERVICE_KEY;
-const POOL_ID    = process.env.POOL_ID;
-const SECRET     = process.env.CRON_SECRET;
+const ODDS_KEY     = process.env.ODDS_API_KEY;
+const SPORT        = process.env.ODDS_SPORT_KEY || "soccer_fifa_world_cup"; // verify via /v4/sports
+const SB_URL       = process.env.SUPABASE_URL;
+const SB_KEY       = process.env.SUPABASE_SERVICE_KEY;
+const POOL_ID      = process.env.POOL_ID;
+const SECRET       = process.env.CRON_SECRET;
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
 
 const sb = (path, opts = {}) =>
   fetch(`${SB_URL}/rest/v1/${path}`, {
@@ -26,7 +27,8 @@ const sb = (path, opts = {}) =>
 
 export default async (req) => {
   const url = new URL(req.url);
-  if (SECRET && url.searchParams.get("token") !== SECRET)
+  const tok = url.searchParams.get("token");
+  if (SECRET && tok !== SECRET && tok !== ADMIN_SECRET)
     return new Response("forbidden", { status: 403 });
 
   // 1) odds (decimal), EU region, two markets

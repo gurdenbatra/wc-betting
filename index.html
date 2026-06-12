@@ -400,11 +400,14 @@ function vAdmin(main){
     g.querySelector("#go").onclick=()=>{ adminTok=g.querySelector("#tok").value.trim(); render(); };
     s.appendChild(g); main.appendChild(s); return;
   }
-  // settlement
-  const settleCard=el(`<div class="card"><h2 class="sec">Settlement</h2>
-    <p class="hint" style="margin-bottom:12px">Pulls final scores from The Odds API and settles all completed h2h + totals markets automatically. Run after each match ends.</p>
+  // settlement + odds sync
+  const settleCard=el(`<div class="card"><h2 class="sec">API actions</h2>
+    <p class="hint" style="margin-bottom:10px">Settlement: pulls final scores and settles all completed h2h + totals markets. Run after each match ends.</p>
     <button class="mini" id="do-settle" style="width:100%">⚡ Run settlement now</button>
-    <p class="hint" id="settle-res" style="margin-top:8px;min-height:16px"></p></div>`);
+    <p class="hint" id="settle-res" style="margin-top:6px;min-height:14px"></p>
+    <p class="hint" style="margin:12px 0 10px;border-top:1px solid var(--line);padding-top:12px">Odds sync: fetches upcoming fixtures + latest odds from The Odds API. New markets only — existing posted lines are never overwritten.</p>
+    <button class="mini ghost" id="do-sync" style="width:100%">↻ Re-fetch odds</button>
+    <p class="hint" id="sync-res" style="margin-top:6px;min-height:14px"></p></div>`);
   settleCard.querySelector("#do-settle").onclick=async()=>{
     const btn=settleCard.querySelector("#do-settle"), res=settleCard.querySelector("#settle-res");
     btn.textContent="Running…"; btn.disabled=true;
@@ -417,6 +420,19 @@ function vAdmin(main){
       if(r.ok) loadAll();
     }catch(e){ res.textContent=String(e); }
     btn.textContent="⚡ Run settlement now"; btn.disabled=false;
+  };
+  settleCard.querySelector("#do-sync").onclick=async()=>{
+    const btn=settleCard.querySelector("#do-sync"), res=settleCard.querySelector("#sync-res");
+    btn.textContent="Fetching…"; btn.disabled=true;
+    try{
+      const r=await fetch(`${FUNCTIONS_BASE}/sync-odds?token=${adminTok}`);
+      const j=await r.json().catch(()=>({}));
+      res.textContent=r.ok
+        ?`Done — ${j.events} events · ${j.new_markets} new markets · ${j.credits_remaining} API credits left`
+        :`Error ${r.status} — check Netlify logs`;
+      if(r.ok) loadAll();
+    }catch(e){ res.textContent=String(e); }
+    btn.textContent="↻ Re-fetch odds"; btn.disabled=false;
   };
   s.appendChild(settleCard);
   // create custom market
