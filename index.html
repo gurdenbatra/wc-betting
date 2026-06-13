@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>Matchday Ledger</title>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#0b1612"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Ledger"/>
+<link rel="apple-touch-icon" href="/icon.svg"/>
 <style>
   :root{
     --ink:#0b1612;--panel:#11211b;--panel2:#16291f;--line:#274034;--line2:#345244;
@@ -12,7 +18,7 @@
     --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box} html,body{margin:0;background:var(--ink)}
-  body{font-family:var(--sans);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.45;padding-bottom:64px}
+  body{font-family:var(--sans);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.45;padding-bottom:calc(64px + env(safe-area-inset-bottom))}
   .wrap{max-width:860px;margin:0 auto;padding:0 16px}
   .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
   button{font-family:inherit;cursor:pointer}
@@ -516,6 +522,10 @@ let toastT; function toast(msg){ const o=document.querySelector(".toast"); if(o)
   const e=el(`<div class="toast">${msg}</div>`); document.body.appendChild(e); clearTimeout(toastT); toastT=setTimeout(()=>e.remove(),2600); }
 
 loadAll();
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("/sw.js").catch(()=>{});
+}
 </script>
 </body>
 </html>

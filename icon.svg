@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0b1612"/>
+  <circle cx="256" cy="226" r="148" fill="none" stroke="#e8b23a" stroke-width="16" opacity="0.55"/>
+  <!-- ball seams -->
+  <line x1="256" y1="78" x2="256" y2="122" stroke="#e8b23a" stroke-width="10" opacity="0.45" stroke-linecap="round"/>
+  <line x1="256" y1="330" x2="256" y2="374" stroke="#e8b23a" stroke-width="10" opacity="0.45" stroke-linecap="round"/>
+  <line x1="108" y1="226" x2="152" y2="226" stroke="#e8b23a" stroke-width="10" opacity="0.45" stroke-linecap="round"/>
+  <line x1="360" y1="226" x2="404" y2="226" stroke="#e8b23a" stroke-width="10" opacity="0.45" stroke-linecap="round"/>
+  <text x="256" y="294" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="172" font-weight="700" fill="#e8b23a" text-anchor="middle">ML</text>
+  <text x="256" y="446" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="46" font-weight="400" fill="#e8b23a" text-anchor="middle" opacity="0.65" letter-spacing="10">LEDGER</text>
+</svg>
