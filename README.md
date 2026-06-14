@@ -39,15 +39,3 @@ two Netlify functions triggered by a GitHub Actions cron.
 - `settle` = **2 credits/call**, four times a day → ~240/mo.
 - Total ≈ **360/month**, inside the free 500. Each function logs
   `credits_remaining`; watch it. If you want fresher data, paid is ~$25/mo for 20k.
-
-## Honest caveats
-- **No real auth.** Players are names within a pool, so a determined friend could
-  pick someone else's name. Fine for banter; not built for adversaries.
-- **The kickoff lock is server-side** (checked in `place_bet` against the database
-  clock), so it isn't bypassable from the browser — but it depends on the fixture's
-  `commence_time` being correct from the odds feed.
-- [Unverified] Netlify scheduled-function availability on the free tier is disputed,
-  which is why scheduling runs through GitHub Actions instead.
-- **Auto-settlement** covers anything derivable from the final score (result, totals,
-  both-teams-to-score, correct score). First-scorer / cards / "who busts first" are
-  created and settled by hand in the Admin panel.
