@@ -57,6 +57,16 @@ export default async (req) => {
       return Response.json({ ok: true });
     }
 
+    if (body.action === "update_player_token") {
+      const token = Math.random().toString(36).slice(2, 10);
+      const r = await sb(`players?id=eq.${body.player_id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ token }),
+      });
+      if (!r.ok) return new Response(await r.text(), { status: 502 });
+      return Response.json({ ok: true, token });
+    }
+
     if (body.action === "add_fixture") {
       const r = await sb("fixtures", {
         method: "POST",

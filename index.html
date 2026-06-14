@@ -133,6 +133,13 @@ async function loadAll(){
   players=pl.data||[]; fixtures=fx.data||[]; bets=bt.data||[]; standings=st.data||[];
   const saved=localStorage.getItem("wc26me_"+ROOM_CODE);
   if(saved && (saved==="bookie" || players.find(x=>x.id===saved))) me=saved;
+  if(!me){
+    const urlTok=new URLSearchParams(location.search).get("t");
+    if(urlTok){
+      const match=players.find(p=>p.token===urlTok);
+      if(match){ me=match.id; localStorage.setItem("wc26me_"+ROOM_CODE,match.id); history.replaceState(null,"",location.pathname); }
+    }
+  }
   render();
 }
 function setMe(id){ me=id; localStorage.setItem("wc26me_"+ROOM_CODE,id); render(); }
@@ -182,20 +189,26 @@ function render(){
 }
 function renderGate(){
   app.innerHTML="";
-  const g=el(`<div class="gate"><div class="logo" style="font-size:18px;margin-bottom:18px">MATCHDAY <b>LEDGER</b></div>
-    <h2 class="sec">Who are you?</h2><div id="pl"></div>
-    <label class="fld" style="margin-top:18px">New player</label>
-    <div class="opt-row"><input class="in" id="newname" placeholder="name"><button class="mini" id="addme">Join</button></div></div>`);
-  const list=g.querySelector("#pl");
-  players.forEach(p=>{ const b=el(`<button class="mini ghost" style="margin:4px;display:inline-block">${p.name}</button>`);
-    b.onclick=()=>setMe(p.id); list.appendChild(b); });
-  g.querySelector("#addme").onclick=async()=>{
-    const name=g.querySelector("#newname").value.trim(); if(!name) return;
-    const {data,error}=await sbc.from("players").insert({pool_id:pool.id,name}).select().single();
-    if(error){ toast(error.message); return; } setMe(data.id);
+  const g=el(`<div class="gate">
+    <div class="logo" style="font-size:18px;margin-bottom:24px">MATCHDAY <b>LEDGER</b></div>
+    <h2 class="sec">Enter your access code</h2>
+    <p class="hint" style="margin-bottom:16px">Your bookie shared a unique code or link — paste the code below.</p>
+    <div class="opt-row">
+      <input class="in" id="tokIn" placeholder="e.g. a3f8d2c1" style="letter-spacing:0.08em;text-transform:lowercase" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <button class="mini" id="tokGo">Go</button>
+    </div>
+    <p class="hint" id="tokErr" style="color:var(--red);min-height:18px;margin-top:8px"></p>
+  </div>`);
+  const tryToken=()=>{
+    const tok=g.querySelector("#tokIn").value.trim().toLowerCase();
+    const match=players.find(p=>p.token===tok);
+    if(match){ setMe(match.id); }
+    else g.querySelector("#tokErr").textContent="Code not recognised — check with your bookie";
   };
-  const bkDiv=el(`<div style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px">
-    <p class="hint" style="margin:0 0 10px;text-align:center">Running the pool? Enter as the house.</p>
+  g.querySelector("#tokGo").onclick=tryToken;
+  g.querySelector("#tokIn").onkeydown=e=>{ if(e.key==="Enter") tryToken(); };
+  const bkDiv=el(`<div style="margin-top:28px;border-top:1px solid var(--line);padding-top:18px">
+    <p class="hint" style="margin:0 0 10px;text-align:center">Running the pool?</p>
     <button class="mini" id="asbookie" style="width:100%;background:transparent;border:1px solid var(--gold);color:var(--gold)">👑 Continue as Bookie</button>
   </div>`);
   bkDiv.querySelector("#asbookie").onclick=()=>setMe("bookie");
@@ -209,15 +222,17 @@ function header(){
   const pillHtml=isBookie
     ?`house P&L <span class="left num" style="color:${hn>=0?"var(--mint)":"var(--red)"}">${hn>=0?"+":""}${hn.toFixed(0)}</span>`
     :`staked today <span class="left num">${staked(today).toFixed(0)}</span>`;
-  const selOpts=`<option value="bookie" ${isBookie?"selected":""}>👑 Bookie</option>`
-    +players.map(p=>`<option value="${p.id}" ${p.id===me?"selected":""}>${p.name}</option>`).join("");
+  const playerName=isBookie?"👑 Bookie":(players.find(p=>p.id===me)?.name||"");
   const h=el(`<header class="bar"><div class="wrap">
     <span class="logo">MATCHDAY <b>LEDGER</b></span>
     <div class="who">
       <span class="pill">${pillHtml}</span>
-      <select class="who-sel">${selOpts}</select>
+      <span class="pill" style="display:inline-flex;align-items:center;gap:8px">
+        <span>${playerName}</span>
+        <button id="logout" style="background:none;border:none;color:var(--mut);font-size:18px;line-height:1;padding:0;cursor:pointer" title="Log out">×</button>
+      </span>
     </div></div></header>`);
-  h.querySelector("select").onchange=e=>setMe(e.target.value);
+  h.querySelector("#logout").onclick=()=>{ me=null; localStorage.removeItem("wc26me_"+ROOM_CODE); render(); };
   return h;
 }
 function tabs(){
@@ -444,6 +459,25 @@ function vAdmin(main){
     btn.textContent="↻ Re-fetch odds"; btn.disabled=false;
   };
   s.appendChild(settleCard);
+  // player access links
+  const linksCard=el(`<div class="card"><h2 class="sec">Player access links</h2>
+    <p class="hint" style="margin-bottom:12px">Share each player's unique link — they tap it once and are logged in automatically on that device.</p>
+  </div>`);
+  players.forEach(p=>{
+    const link=p.token?`${location.origin}/?t=${p.token}`:null;
+    const row=el(`<div class="lb-row" style="flex-wrap:wrap;gap:8px;padding:12px 0">
+      <span style="font-weight:600;min-width:70px">${p.name}</span>
+      <code class="num" style="font-size:11px;color:var(--gold);flex:1;word-break:break-all">${link||"no code yet"}</code>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="mini" data-copy style="${link?"":"opacity:.4;pointer-events:none"}">Copy</button>
+        <button class="mini ghost" data-regen>New code</button>
+      </div>
+    </div>`);
+    if(link) row.querySelector("[data-copy]").onclick=async()=>{ await navigator.clipboard.writeText(link); toast(`Copied link for ${p.name}`); };
+    row.querySelector("[data-regen]").onclick=async()=>{ if(await adminCall({action:"update_player_token",player_id:p.id})) toast(`New code for ${p.name}`); };
+    linksCard.appendChild(row);
+  });
+  s.appendChild(linksCard);
   // create custom market
   const c=el(`<div class="card"><h2 class="sec">Add a fun bet</h2>
     <label class="fld">Match</label><select class="in" id="cm_fx">${fixtures.map(f=>`<option value="${f.id}">${f.home} v ${f.away}</option>`).join("")}</select>
