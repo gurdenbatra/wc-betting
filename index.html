@@ -201,7 +201,7 @@ function render(){
   app.appendChild(main);
   if(slip) app.appendChild(slipEl());
   startTick();
-  if(sy) window.scrollTo(0,sy);
+  if(sy) requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,sy)));
 }
 function renderGate(){
   app.innerHTML="";
