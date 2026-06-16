@@ -458,6 +458,25 @@ function vAdmin(main){
     }catch(e){ res.textContent=String(e); }
     btn.textContent="↻ Re-fetch odds"; btn.disabled=false;
   };
+  // WC winner outright market
+  settleCard.appendChild(el(`<p class="hint" style="margin:12px 0 10px;border-top:1px solid var(--line);padding-top:12px">WC Winner: fetches outright winner odds and creates a bettable market with the top 10 favourites. Betting locks at Round of 16 (2 Jul). Settle manually at the end. Safe to run again — won't overwrite once created.</p>`));
+  settleCard.appendChild(el(`<button class="mini ghost" id="do-outrights" style="width:100%">🏆 Fetch WC Winner odds</button>`));
+  settleCard.appendChild(el(`<p class="hint" id="outrights-res" style="margin-top:6px;min-height:14px"></p>`));
+  settleCard.querySelector("#do-outrights").onclick=async()=>{
+    const btn=settleCard.querySelector("#do-outrights"), res=settleCard.querySelector("#outrights-res");
+    btn.textContent="Fetching…"; btn.disabled=true;
+    try{
+      const r=await fetch(`${FUNCTIONS_BASE}/admin`,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"sync_wc_winner",token:adminTok})});
+      const j=await r.json().catch(()=>({}));
+      res.textContent=r.ok
+        ?`${j.created?"Created":"Already exists"} — top ${j.teams} teams · ${j.credits_remaining} API credits left`
+        :`Error ${r.status} — check Netlify logs`;
+      if(r.ok) loadAll();
+    }catch(e){ res.textContent=String(e); }
+    btn.textContent="🏆 Fetch WC Winner odds"; btn.disabled=false;
+  };
   s.appendChild(settleCard);
   // player access links
   const linksCard=el(`<div class="card"><h2 class="sec">Player access links</h2>
