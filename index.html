@@ -17,21 +17,23 @@
     --mono:"Roboto Mono",ui-monospace,Menlo,Consolas,monospace;
     --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
-  *{box-sizing:border-box} html,body{margin:0;background:var(--ink)}
-  body{font-family:var(--sans);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.45;padding-bottom:calc(64px + env(safe-area-inset-bottom))}
-  .wrap{max-width:860px;margin:0 auto;padding:0 16px}
+  *{box-sizing:border-box} html,body{margin:0;background:var(--ink);overflow-x:hidden}
+  body{font-family:var(--sans);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.45;padding-bottom:calc(40px + env(safe-area-inset-bottom))}
+  .wrap{max-width:860px;margin:0 auto;padding:0 calc(16px + env(safe-area-inset-right)) 0 calc(16px + env(safe-area-inset-left))}
   .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
   button{font-family:inherit;cursor:pointer}
-  header.bar{position:sticky;top:0;z-index:20;background:rgba(11,22,18,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
-  .bar .wrap{display:flex;align-items:center;gap:12px;padding:12px 16px}
-  .logo{font-family:var(--mono);font-weight:700;letter-spacing:.06em;font-size:14px}
+  header.bar{position:sticky;top:0;z-index:20;background:rgba(11,22,18,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+  .bar .wrap{display:flex;align-items:center;gap:8px;padding:11px 16px;min-width:0}
+  .logo{font-family:var(--mono);font-weight:700;letter-spacing:.06em;font-size:14px;flex-shrink:0}
   .logo b{color:var(--gold)}
-  .who{margin-left:auto;display:flex;align-items:center;gap:10px}
-  .pill{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);background:var(--panel2);border-radius:999px;padding:6px 12px}
+  .who{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0}
+  .pill{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);background:var(--panel2);border-radius:999px;padding:6px 12px;white-space:nowrap}
   .pill .left{color:var(--mint)}
-  select.who-sel{font-family:var(--mono);font-size:12px;background:var(--panel2);color:var(--txt);border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
-  nav.tabs .wrap{display:flex;gap:4px;border-bottom:1px solid var(--line)}
-  .tab{background:none;border:none;color:var(--mut);font-size:13px;padding:14px;border-bottom:2px solid transparent;font-family:var(--mono);letter-spacing:.03em}
+  .pill .nm{display:inline-block;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+  nav.tabs{border-bottom:1px solid var(--line)}
+  nav.tabs .wrap{display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav.tabs .wrap::-webkit-scrollbar{display:none}
+  .tab{background:none;border:none;color:var(--mut);font-size:13px;padding:14px 13px;border-bottom:2px solid transparent;font-family:var(--mono);letter-spacing:.03em;white-space:nowrap;flex-shrink:0}
   .tab.on{color:var(--txt);border-bottom-color:var(--gold)}
   section{padding-top:20px}
   h2.sec{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
@@ -46,11 +48,14 @@
   .mkt-h{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.06em;margin-bottom:8px;display:flex;gap:8px}
   .mkt-h .res{color:var(--mint)}
   .opts{display:flex;flex-wrap:wrap;gap:8px}
-  .opt{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:2px;min-width:80px;align-items:flex-start;color:var(--txt)}
+  .opt{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:2px;min-width:80px;max-width:100%;align-items:flex-start;color:var(--txt)}
   .opt:hover:not(:disabled){border-color:var(--gold)} .opt:disabled{opacity:.4;cursor:default}
-  .opt .ol{font-size:12px} .opt .od{font-family:var(--mono);font-size:15px;color:var(--gold);font-weight:600}
+  .opt .ol{font-size:12px;line-height:1.25;overflow-wrap:anywhere} .opt .od{font-family:var(--mono);font-size:15px;color:var(--gold);font-weight:600}
   .opt.win{border-color:var(--mint)} .opt.win .od{color:var(--mint)}
-  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+  .opts.list{flex-direction:column;flex-wrap:nowrap}
+  .opts.list .opt{flex-direction:row;width:100%;min-width:0;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px}
+  .opts.list .opt .ol{flex:1;min-width:0} .opts.list .opt .od{flex-shrink:0}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
   .ticket{background:#f5efe0;color:#1c241f;width:100%;max-width:380px;border-radius:12px;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.5)}
   .tk-h{background:#1c241f;color:#f5efe0;padding:12px 16px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between}
   .tk-b{padding:16px}
@@ -71,12 +76,14 @@
   .lb{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .lb-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
   .lb-row:last-child{border-bottom:none} .lb-row.me{background:var(--panel2)}
-  .rank{font-family:var(--mono);font-size:13px;color:var(--mut);width:22px} .rank.r1{color:var(--gold)}
-  .lb-name{font-weight:600} .lb-rec{font-family:var(--mono);font-size:11px;color:var(--mut)}
-  .lb-net{font-family:var(--mono);font-size:16px;text-align:right} .up{color:var(--mint)} .down{color:var(--red)}
+  .lb-row>div{min-width:0}
+  .rank{font-family:var(--mono);font-size:13px;color:var(--mut);width:22px;flex-shrink:0} .rank.r1{color:var(--gold)}
+  .lb-name{font-weight:600;overflow-wrap:anywhere} .lb-rec{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .lb-net{font-family:var(--mono);font-size:16px;text-align:right;flex-shrink:0} .up{color:var(--mint)} .down{color:var(--red)}
   .bet{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
-  .b-pick{font-size:14px;font-weight:600} .b-sub{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:2px}
-  .b-stat{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid var(--line2)}
+  .bet>div{min-width:0}
+  .b-pick{font-size:14px;font-weight:600;overflow-wrap:anywhere} .b-sub{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:2px;overflow-wrap:anywhere}
+  .b-stat{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid var(--line2);flex-shrink:0}
   .b-stat.pending{color:var(--gold);border-color:var(--gold)} .b-stat.won{color:var(--mint);border-color:var(--mint)} .b-stat.lost{color:var(--red);border-color:var(--red)}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
   label.fld{display:block;font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.06em;margin:10px 0 5px}
@@ -96,13 +103,20 @@
   .action-item.mine{color:var(--gold)}
   .action-item .aps{font-family:var(--mono);font-size:11px;color:var(--mut);font-weight:400}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1c241f;font-weight:600;font-size:13px;padding:11px 18px;border-radius:10px;z-index:60;max-width:90%;text-align:center}
-  .gate{max-width:360px;margin:80px auto;text-align:center}
-  @media(max-width:560px){.grid2{grid-template-columns:1fr}.teams{font-size:16px}}
+  .gate{max-width:360px;margin:80px auto;text-align:center;padding:0 16px}
+  .splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--ink);z-index:80;padding:env(safe-area-inset-top) 16px 0}
+  .splash .logo{font-family:var(--mono);font-weight:700;letter-spacing:.08em;font-size:17px}
+  .splash .logo b{color:var(--gold)}
+  .spinner{width:34px;height:34px;border:3px solid var(--line2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .sp-txt{font-family:var(--mono);font-size:12px;color:var(--mut);letter-spacing:.08em}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}.teams{font-size:16px}.tab{padding:13px 11px;font-size:12px}.logo{font-size:13px}}
+  @media(max-width:380px){.pill .pl-k{display:none}.pill{padding:6px 11px}}
 </style>
 <script src="/config.js"></script>
 </head>
 <body>
-<div id="app"></div>
+<div id="app"><div class="splash"><div class="logo">WC BETTING <b>BAKCHODI</b></div><div class="spinner"></div><div class="sp-txt">loading…</div></div></div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -220,15 +234,15 @@ function header(){
   const isBookie=me==="bookie";
   const hn=housePnl();
   const pillHtml=isBookie
-    ?`house P&L <span class="left num" style="color:${hn>=0?"var(--mint)":"var(--red)"}">${hn>=0?"+":""}${hn.toFixed(0)}</span>`
-    :`staked today <span class="left num">${staked(today).toFixed(0)}</span>`;
+    ?`<span class="pl-k">house P&L</span> <span class="left num" style="color:${hn>=0?"var(--mint)":"var(--red)"}">${hn>=0?"+":""}${hn.toFixed(0)}</span>`
+    :`<span class="pl-k">staked today</span> <span class="left num">${staked(today).toFixed(0)}</span>`;
   const playerName=isBookie?"👑 Bookie":(players.find(p=>p.id===me)?.name||"");
   const h=el(`<header class="bar"><div class="wrap">
     <span class="logo">WC <b>BAKCHODI</b></span>
     <div class="who">
       <span class="pill">${pillHtml}</span>
       <span class="pill" style="display:inline-flex;align-items:center;gap:8px">
-        <span>${playerName}</span>
+        <span class="nm">${playerName}</span>
         <button id="logout" style="background:none;border:none;color:var(--mut);font-size:18px;line-height:1;padding:0;cursor:pointer" title="Log out">×</button>
       </span>
     </div></div></header>`);
@@ -239,6 +253,7 @@ function tabs(){
   const t=[["matches","Matches"],["overall","Overall"],["mybets","My bets"],["table","Table"],["action","Action"],["admin","Admin"]];
   const n=el(`<nav class="tabs"><div class="wrap">${t.map(([k,l])=>`<button class="tab ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</div></nav>`);
   n.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
+  requestAnimationFrame(()=>n.querySelector(".tab.on")?.scrollIntoView({inline:"center",block:"nearest"}));
   return n;
 }
 function vMatches(main){
@@ -264,7 +279,8 @@ function fxCard(fx){
     </div></div>`);
   (fx.markets||[]).sort((a,b)=>a.key.localeCompare(b.key)).forEach(mkt=>{
     const settled=mkt.result!==null;
-    const m=el(`<div class="mkt"><div class="mkt-h">${mkt.label}${settled?`<span class="res">✓ ${labelFor(mkt,mkt.result)}</span>`:""}</div><div class="opts"></div></div>`);
+    const wide=(mkt.outcomes||[]).length>3;
+    const m=el(`<div class="mkt"><div class="mkt-h">${mkt.label}${settled?`<span class="res">✓ ${labelFor(mkt,mkt.result)}</span>`:""}</div><div class="opts ${wide?"list":""}"></div></div>`);
     const opts=m.querySelector(".opts");
     (mkt.outcomes||[]).forEach(opt=>{
       const cls=settled&&opt.key===mkt.result?"win":"";
@@ -322,7 +338,7 @@ function vMyBets(main){
     filters.appendChild(btn);
   });
   s.appendChild(filters);
-  if(!mine.length) s.appendChild(el(`<div class="empty">No ${betFilter==="all"?"":""}${betFilter} bets.</div>`));
+  if(!mine.length) s.appendChild(el(`<div class="empty">No ${betFilter==="all"?"":betFilter+" "}bets yet.</div>`));
   mine.forEach(b=>{
     const stake=Number(b.stake), odds=Number(b.odds);
     const profit=(stake*(odds-1)).toFixed(0);
