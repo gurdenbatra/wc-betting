@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Matchday Ledger</title>
+<title>WC Betting Bakchodi</title>
 <link rel="manifest" href="/manifest.json"/>
 <meta name="theme-color" content="#0b1612"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="Ledger"/>
+<meta name="apple-mobile-web-app-title" content="Bakchodi"/>
 <link rel="apple-touch-icon" href="/icon.svg"/>
 <style>
   :root{
@@ -190,7 +190,7 @@ function render(){
 function renderGate(){
   app.innerHTML="";
   const g=el(`<div class="gate">
-    <div class="logo" style="font-size:18px;margin-bottom:24px">MATCHDAY <b>LEDGER</b></div>
+    <div class="logo" style="font-size:18px;margin-bottom:24px">WC BETTING <b>BAKCHODI</b></div>
     <h2 class="sec">Enter your access code</h2>
     <p class="hint" style="margin-bottom:16px">Your bookie shared a unique code or link — paste the code below.</p>
     <div class="opt-row">
@@ -224,7 +224,7 @@ function header(){
     :`staked today <span class="left num">${staked(today).toFixed(0)}</span>`;
   const playerName=isBookie?"👑 Bookie":(players.find(p=>p.id===me)?.name||"");
   const h=el(`<header class="bar"><div class="wrap">
-    <span class="logo">MATCHDAY <b>LEDGER</b></span>
+    <span class="logo">WC <b>BAKCHODI</b></span>
     <div class="who">
       <span class="pill">${pillHtml}</span>
       <span class="pill" style="display:inline-flex;align-items:center;gap:8px">
@@ -363,7 +363,7 @@ function vTable(main){
   main.appendChild(s);
 }
 function tableText(rows){ const md=["🥇","🥈","🥉"];
-  return "⚽ MATCHDAY LEDGER — net\n"+rows.map((r,i)=>`${md[i]||(i+1)+"."} ${r.name} ${Number(r.net)>=0?"+":""}${Number(r.net).toFixed(0)}`).join("\n"); }
+  return "⚽ WC BAKCHODI — net\n"+rows.map((r,i)=>`${md[i]||(i+1)+"."} ${r.name} ${Number(r.net)>=0?"+":""}${Number(r.net).toFixed(0)}`).join("\n"); }
 function openText(){
   let out="⚽ Open markets:\n";
   fixtures.filter(fx=>!locked(fx)&&(fx.markets||[]).some(m=>m.result===null)).forEach(fx=>{

@@ -1,6 +1,6 @@
 {
-  "name": "Matchday Ledger",
-  "short_name": "Ledger",
+  "name": "WC Betting Bakchodi",
+  "short_name": "Bakchodi",
   "description": "WC 2026 friend group betting pool",
   "start_url": "/",
   "display": "standalone",
