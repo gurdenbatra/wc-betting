@@ -469,11 +469,11 @@ function vAdmin(main){
       const r=await fetch(`${FUNCTIONS_BASE}/admin`,{method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({action:"sync_wc_winner",token:adminTok})});
-      const j=await r.json().catch(()=>({}));
-      const errTxt=r.ok?null:await r.clone().text().catch(()=>"");
+      const txt=await r.text();
+      const j=(()=>{try{return JSON.parse(txt);}catch{return {};}})();
       res.textContent=r.ok
         ?`${j.created?"Created":"Already exists"} — top ${j.teams} teams · ${j.credits_remaining} API credits left`
-        :`Error ${r.status}: ${errTxt||"check Netlify logs"}`;
+        :`Error ${r.status}: ${txt||"check Netlify logs"}`;
       if(r.ok) loadAll();
     }catch(e){ res.textContent=String(e); }
     btn.textContent="🏆 Fetch WC Winner odds"; btn.disabled=false;
