@@ -70,44 +70,27 @@ export default async (req) => {
     }
 
     if (body.action === "sync_wc_winner") {
-      // Try eu then us — outrights availability varies by region and time of tournament
-      let r, remaining, events;
-      for (const region of ["eu", "us", "uk"]) {
-        r = await fetch(
-          `https://api.the-odds-api.com/v4/sports/${SPORT}/odds?regions=${region}&markets=outrights&oddsFormat=decimal&apiKey=${ODDS_KEY}`
-        );
-        remaining = r.headers.get("x-requests-remaining");
-        if (r.ok) { events = await r.json(); break; }
-        const errText = await r.text();
-        console.error(`outrights region=${region}: ${r.status} ${errText}`);
-        if (r.status !== 422) return new Response(`odds api ${region}: ${r.status} ${errText}`, { status: 502 });
-        // 422 = market not supported in this region — try next
-      }
-      if (!events) return new Response("outrights not available in eu/us/uk regions for this sport", { status: 502 });
+      // Odds API suspends outright futures once the tournament is live, so we
+      // use pre-set odds. Pass body.teams ([{name, odds}]) to override defaults.
+      const DEFAULT_TEAMS = [
+        { name: "Brazil",          odds: 4.50 },
+        { name: "France",          odds: 5.00 },
+        { name: "England",         odds: 5.50 },
+        { name: "Argentina",       odds: 6.00 },
+        { name: "Spain",           odds: 7.00 },
+        { name: "Germany",         odds: 8.00 },
+        { name: "Portugal",        odds: 9.00 },
+        { name: "Netherlands",     odds: 12.00 },
+        { name: "United States",   odds: 15.00 },
+        { name: "Mexico",          odds: 18.00 },
+      ];
+      const teams = (body.teams || DEFAULT_TEAMS).map(t => ({
+        key: t.name.toLowerCase().replace(/[\s'.-]+/g, "_"),
+        label: t.name,
+        odds: t.odds,
+      }));
 
-      // Collect outcomes from the first event/bookmaker that has them
-      let raw = [];
-      outer: for (const ev of events) {
-        for (const bk of ev.bookmakers || []) {
-          const m = (bk.markets || []).find(m => m.key === "outrights");
-          if (m?.outcomes?.length) { raw = m.outcomes; break outer; }
-        }
-      }
-      if (!raw.length) return new Response(`no outright outcomes in ${events.length} events`, { status: 404 });
-
-      // Favourites first (lowest price = shortest odds), top 10
-      const top10 = raw
-        .slice()
-        .sort((a, b) => a.price - b.price)
-        .slice(0, 10)
-        .map(o => ({
-          key: o.name.toLowerCase().replace(/[\s'.-]+/g, "_"),
-          label: o.name,
-          odds: o.price,
-        }));
-
-      // Upsert the special WC winner fixture (ext_id keeps it idempotent)
-      // Betting locks at start of Round of 16 (July 2 2026)
+      // Upsert the special WC winner fixture — betting locks at Round of 16 (2 Jul)
       const upsertFx = await sb("fixtures?on_conflict=pool_id,ext_id", {
         method: "POST",
         headers: { Prefer: "resolution=merge-duplicates,return=representation" },
@@ -123,11 +106,16 @@ export default async (req) => {
       if (!upsertFx.ok) return new Response(`fixture upsert: ${await upsertFx.text()}`, { status: 502 });
       const [fx] = await upsertFx.json();
 
-      // Only create market if it doesn't exist yet (same philosophy as sync-odds)
+      // Create or update the market (re-running refreshes odds as teams are eliminated)
       const mRes = await sb(`markets?fixture_id=eq.${fx.id}&key=eq.outright`);
       const existing = (await mRes.json())[0];
+
       if (existing) {
-        return Response.json({ ok: true, teams: top10.length, created: false, credits_remaining: remaining });
+        await sb(`markets?id=eq.${existing.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ outcomes: teams }),
+        });
+        return Response.json({ ok: true, teams: teams.length, created: false });
       }
 
       const ins = await sb("markets", {
@@ -138,11 +126,11 @@ export default async (req) => {
           label: "World Cup 2026 Winner",
           point: null,
           auto: false,
-          outcomes: top10,
+          outcomes: teams,
         }),
       });
       if (!ins.ok) return new Response(`market insert: ${await ins.text()}`, { status: 502 });
-      return Response.json({ ok: true, teams: top10.length, created: true, credits_remaining: remaining });
+      return Response.json({ ok: true, teams: teams.length, created: true });
     }
 
     if (body.action === "add_fixture") {

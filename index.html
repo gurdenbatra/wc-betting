@@ -459,8 +459,8 @@ function vAdmin(main){
     btn.textContent="↻ Re-fetch odds"; btn.disabled=false;
   };
   // WC winner outright market
-  settleCard.appendChild(el(`<p class="hint" style="margin:12px 0 10px;border-top:1px solid var(--line);padding-top:12px">WC Winner: fetches outright winner odds and creates a bettable market with the top 10 favourites. Betting locks at Round of 16 (2 Jul). Settle manually at the end. Safe to run again — won't overwrite once created.</p>`));
-  settleCard.appendChild(el(`<button class="mini ghost" id="do-outrights" style="width:100%">🏆 Fetch WC Winner odds</button>`));
+  settleCard.appendChild(el(`<p class="hint" style="margin:12px 0 10px;border-top:1px solid var(--line);padding-top:12px">WC Winner: creates an outright winner market with the top 10 favourites at pre-set odds. Betting locks at Round of 16 (2 Jul). Run again to update the team list as sides are knocked out. Settle manually at the end.</p>`));
+  settleCard.appendChild(el(`<button class="mini ghost" id="do-outrights" style="width:100%">🏆 Create WC Winner market</button>`));
   settleCard.appendChild(el(`<p class="hint" id="outrights-res" style="margin-top:6px;min-height:14px"></p>`));
   settleCard.querySelector("#do-outrights").onclick=async()=>{
     const btn=settleCard.querySelector("#do-outrights"), res=settleCard.querySelector("#outrights-res");
