@@ -133,6 +133,77 @@ export default async (req) => {
       return Response.json({ ok: true, teams: teams.length, created: true });
     }
 
+    if (body.action === "create_tournament_props") {
+      // Tournament-wide props — odds derived from Polymarket probabilities
+      const PROPS = [
+        {
+          key: "neymar_plays_wc",
+          label: "🇧🇷 Will Neymar play in the World Cup?",
+          outcomes: [{ key:"yes",label:"Yes",odds:1.10 },{ key:"no",label:"No",odds:6.00 }],
+        },
+        {
+          key: "ronaldo_cries",
+          label: "😭 Will Ronaldo cry at the World Cup?",
+          outcomes: [{ key:"yes",label:"Yes",odds:1.30 },{ key:"no",label:"No",odds:3.00 }],
+        },
+        {
+          key: "messi_1plus_goals",
+          label: "⚽ Messi: score 1+ goals in the WC?",
+          outcomes: [{ key:"yes",label:"Yes",odds:1.08 },{ key:"no",label:"No",odds:6.50 }],
+        },
+        {
+          key: "messi_2plus_goals",
+          label: "⚽ Messi: score 2+ goals in the WC?",
+          outcomes: [{ key:"yes",label:"Yes",odds:1.33 },{ key:"no",label:"No",odds:3.00 }],
+        },
+        {
+          key: "ronaldo_free_kick",
+          label: "🥷 Ronaldo: score a free kick in the WC?",
+          outcomes: [{ key:"yes",label:"Yes",odds:6.00 },{ key:"no",label:"No",odds:1.10 }],
+        },
+        {
+          key: "trump_at_final",
+          label: "🇺🇸 Trump to attend the World Cup Final?",
+          outcomes: [{ key:"yes",label:"Yes",odds:1.06 },{ key:"no",label:"No",odds:7.00 }],
+        },
+        {
+          key: "trump_champions_photo",
+          label: "📸 Trump in the WC Champions team photo?",
+          outcomes: [{ key:"yes",label:"Yes",odds:1.55 },{ key:"no",label:"No",odds:2.20 }],
+        },
+      ];
+
+      // Upsert the tournament props fixture — locks at WC Final kickoff (Jul 19)
+      const upsertFx = await sb("fixtures?on_conflict=pool_id,ext_id", {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+        body: JSON.stringify({
+          pool_id: POOL_ID,
+          ext_id: "wc2026_props",
+          home: "Tournament Props",
+          away: "Futures",
+          stage: "Tournament",
+          commence_time: "2026-07-20T00:00:00Z",
+        }),
+      });
+      if (!upsertFx.ok) return new Response(`fixture upsert: ${await upsertFx.text()}`, { status: 502 });
+      const [fx] = await upsertFx.json();
+
+      // Only create markets that don't already exist
+      const mRes = await sb(`markets?fixture_id=eq.${fx.id}&select=key`);
+      const existingKeys = new Set((await mRes.json()).map(m => m.key));
+      let created = 0;
+      for (const prop of PROPS) {
+        if (existingKeys.has(prop.key)) continue;
+        const ins = await sb("markets", {
+          method: "POST",
+          body: JSON.stringify({ fixture_id: fx.id, key: prop.key, label: prop.label, point: null, auto: false, outcomes: prop.outcomes }),
+        });
+        if (ins.ok) created++;
+      }
+      return Response.json({ ok: true, created, skipped: PROPS.length - created });
+    }
+
     if (body.action === "add_fixture") {
       const r = await sb("fixtures", {
         method: "POST",

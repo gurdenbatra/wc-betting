@@ -470,6 +470,25 @@ function vAdmin(main){
   settleCard.appendChild(el(`<p class="hint" style="margin:12px 0 10px;border-top:1px solid var(--line);padding-top:12px">WC Winner: creates an outright winner market with the top 10 favourites at pre-set odds. Betting locks at Round of 16 (2 Jul). Run again to update the team list as sides are knocked out. Settle manually at the end.</p>`));
   settleCard.appendChild(el(`<button class="mini ghost" id="do-outrights" style="width:100%">🏆 Create WC Winner market</button>`));
   settleCard.appendChild(el(`<p class="hint" id="outrights-res" style="margin-top:6px;min-height:14px"></p>`));
+  settleCard.appendChild(el(`<p class="hint" style="margin:8px 0 10px">Tournament props: adds 7 Polymarket-inspired yes/no bets (Neymar, Ronaldo, Messi, Trump). Betting locks at WC Final. Settle each by hand. Safe to re-run — skips already-created markets.</p>`));
+  settleCard.appendChild(el(`<button class="mini ghost" id="do-props" style="width:100%">🎭 Create Tournament Props</button>`));
+  settleCard.appendChild(el(`<p class="hint" id="props-res" style="margin-top:6px;min-height:14px"></p>`));
+  settleCard.querySelector("#do-props").onclick=async()=>{
+    const btn=settleCard.querySelector("#do-props"), res=settleCard.querySelector("#props-res");
+    btn.textContent="Creating…"; btn.disabled=true;
+    try{
+      const r=await fetch(`${FUNCTIONS_BASE}/admin`,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"create_tournament_props",token:adminTok})});
+      const txt=await r.text();
+      const j=(()=>{try{return JSON.parse(txt);}catch{return {};}})();
+      res.textContent=r.ok
+        ?`Done — ${j.created} created, ${j.skipped} already existed`
+        :`Error ${r.status}: ${txt}`;
+      if(r.ok) loadAll();
+    }catch(e){ res.textContent=String(e); }
+    btn.textContent="🎭 Create Tournament Props"; btn.disabled=false;
+  };
   settleCard.querySelector("#do-outrights").onclick=async()=>{
     const btn=settleCard.querySelector("#do-outrights"), res=settleCard.querySelector("#outrights-res");
     btn.textContent="Fetching…"; btn.disabled=true;
