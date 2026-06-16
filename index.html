@@ -192,6 +192,7 @@ function el(html){ const t=document.createElement("template"); t.innerHTML=html.
 function render(){
   if(!pool) return;
   if(!me){ renderGate(); return; }
+  const sy=window.scrollY;
   app.innerHTML="";
   app.appendChild(header());
   app.appendChild(tabs());
@@ -200,6 +201,7 @@ function render(){
   app.appendChild(main);
   if(slip) app.appendChild(slipEl());
   startTick();
+  if(sy) window.scrollTo(0,sy);
 }
 function renderGate(){
   app.innerHTML="";
