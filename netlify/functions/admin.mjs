@@ -70,13 +70,20 @@ export default async (req) => {
     }
 
     if (body.action === "sync_wc_winner") {
-      // Fetch outright winner odds — costs 2 credits (1 market × eu region)
-      const r = await fetch(
-        `https://api.the-odds-api.com/v4/sports/${SPORT}/odds?regions=eu&markets=outrights&oddsFormat=decimal&apiKey=${ODDS_KEY}`
-      );
-      if (!r.ok) return new Response(`odds api: ${r.status} ${await r.text()}`, { status: 502 });
-      const remaining = r.headers.get("x-requests-remaining");
-      const events = await r.json();
+      // Try eu then us — outrights availability varies by region and time of tournament
+      let r, remaining, events;
+      for (const region of ["eu", "us", "uk"]) {
+        r = await fetch(
+          `https://api.the-odds-api.com/v4/sports/${SPORT}/odds?regions=${region}&markets=outrights&oddsFormat=decimal&apiKey=${ODDS_KEY}`
+        );
+        remaining = r.headers.get("x-requests-remaining");
+        if (r.ok) { events = await r.json(); break; }
+        const errText = await r.text();
+        console.error(`outrights region=${region}: ${r.status} ${errText}`);
+        if (r.status !== 422) return new Response(`odds api ${region}: ${r.status} ${errText}`, { status: 502 });
+        // 422 = market not supported in this region — try next
+      }
+      if (!events) return new Response("outrights not available in eu/us/uk regions for this sport", { status: 502 });
 
       // Collect outcomes from the first event/bookmaker that has them
       let raw = [];
@@ -86,7 +93,7 @@ export default async (req) => {
           if (m?.outcomes?.length) { raw = m.outcomes; break outer; }
         }
       }
-      if (!raw.length) return new Response("no outright outcomes found", { status: 404 });
+      if (!raw.length) return new Response(`no outright outcomes in ${events.length} events`, { status: 404 });
 
       // Favourites first (lowest price = shortest odds), top 10
       const top10 = raw

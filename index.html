@@ -470,9 +470,10 @@ function vAdmin(main){
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({action:"sync_wc_winner",token:adminTok})});
       const j=await r.json().catch(()=>({}));
+      const errTxt=r.ok?null:await r.clone().text().catch(()=>"");
       res.textContent=r.ok
         ?`${j.created?"Created":"Already exists"} — top ${j.teams} teams · ${j.credits_remaining} API credits left`
-        :`Error ${r.status} — check Netlify logs`;
+        :`Error ${r.status}: ${errTxt||"check Netlify logs"}`;
       if(r.ok) loadAll();
     }catch(e){ res.textContent=String(e); }
     btn.textContent="🏆 Fetch WC Winner odds"; btn.disabled=false;
