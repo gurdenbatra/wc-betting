@@ -182,7 +182,7 @@ function render(){
   app.appendChild(header());
   app.appendChild(tabs());
   const main=el(`<div class="wrap"></div>`);
-  ({matches:vMatches,mybets:vMyBets,table:vTable,action:vAction,admin:vAdmin}[tab])(main);
+  ({matches:vMatches,overall:vOverall,mybets:vMyBets,table:vTable,action:vAction,admin:vAdmin}[tab])(main);
   app.appendChild(main);
   if(slip) app.appendChild(slipEl());
   startTick();
@@ -236,22 +236,30 @@ function header(){
   return h;
 }
 function tabs(){
-  const t=[["matches","Matches"],["mybets","My bets"],["table","Table"],["action","Action"],["admin","Admin"]];
+  const t=[["matches","Matches"],["overall","Overall"],["mybets","My bets"],["table","Table"],["action","Action"],["admin","Admin"]];
   const n=el(`<nav class="tabs"><div class="wrap">${t.map(([k,l])=>`<button class="tab ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</div></nav>`);
   n.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
   return n;
 }
 function vMatches(main){
   const s=el(`<section><h2 class="sec">Open markets</h2></section>`);
-  const open=fixtures.filter(fx=>(fx.markets||[]).some(m=>m.result===null));
+  const open=fixtures.filter(fx=>fx.stage!=="Tournament"&&(fx.markets||[]).some(m=>m.result===null));
   if(!open.length) s.appendChild(el(`<div class="empty">No open markets yet. The odds sync will fill these in.</div>`));
   open.forEach(fx=>s.appendChild(fxCard(fx)));
   main.appendChild(s);
 }
+function vOverall(main){
+  const s=el(`<section><h2 class="sec">Tournament bets</h2></section>`);
+  const overall=fixtures.filter(fx=>fx.stage==="Tournament");
+  if(!overall.length) s.appendChild(el(`<div class="empty">No tournament markets yet — create the WC Winner market from the Admin tab.</div>`));
+  overall.forEach(fx=>s.appendChild(fxCard(fx)));
+  main.appendChild(s);
+}
 function fxCard(fx){
   const lk=locked(fx); const c=cd(fx.commence_time);
+  const teamsHtml=fx.stage==="Tournament"?fx.home:`${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}`;
   const card=el(`<div class="fx"><div class="fx-top">
-      <div><span class="stage">${fx.stage||""}</span><div class="teams">${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}</div></div>
+      <div><span class="stage">${fx.stage||""}</span><div class="teams">${teamsHtml}</div></div>
       <div class="ko">${lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}" data-cd="${fx.commence_time}">${c.txt}</span>`}</div>
     </div></div>`);
   (fx.markets||[]).sort((a,b)=>a.key.localeCompare(b.key)).forEach(mkt=>{
