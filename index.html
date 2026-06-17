@@ -351,9 +351,12 @@ function vMyBets(main){
       ?`<span style="color:var(--red)">-${stake.toFixed(0)} lost</span>`
       :`<span style="color:var(--gold)">pending</span>`;
     const fx=fixtures.find(f=>f.id===b.fixture_id);
+    const mkt=(fx?.markets||[]).find(m=>m.id===b.market_id);
+    const mktLabel=mkt&&mkt.label!==b.label?`<div class="b-sub" style="margin-bottom:2px;color:var(--fg)">${mkt.label}</div>`:"";
+    const fxLine=fx?.stage==="Tournament"?fx.home:`${fx?fx.home+" v "+fx.away:""}`;
     const pname=isBookie?(players.find(p=>p.id===b.player_id)?.name||"?")+` · `:"";
-    s.appendChild(el(`<div class="bet"><div style="flex:1"><div class="b-pick">${b.label}</div>
-      <div class="b-sub">${pname}${fx?fx.home+" v "+fx.away:""} · @${odds.toFixed(2)}</div>
+    s.appendChild(el(`<div class="bet"><div style="flex:1">${mktLabel}<div class="b-pick">${b.label}</div>
+      <div class="b-sub">${pname}${fxLine} · @${odds.toFixed(2)}</div>
       <div class="b-sub" style="margin-top:3px">${stakeStr} · ${outcome}</div></div>
       <span class="b-stat ${b.status}">${b.status}</span></div>`));
   });
