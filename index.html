@@ -97,11 +97,35 @@
   .hint{font-size:12px;color:var(--mut);margin:6px 0 0} .empty{color:var(--mut);font-size:14px;text-align:center;padding:40px 0;font-family:var(--mono)}
   .action-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .action-col{flex:1;min-width:90px;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:10px 12px}
-  .action-col-head{font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline}
-  .action-col-head .ao{color:var(--gold);font-weight:600}
+  .action-col-head{font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+  .action-col-head>span:first-child{min-width:0;overflow-wrap:anywhere;line-height:1.2}
+  .action-col-head .ao{color:var(--gold);font-weight:600;flex-shrink:0}
   .action-item{font-size:13px;font-weight:600;padding:3px 0;display:flex;justify-content:space-between;align-items:baseline}
   .action-item.mine{color:var(--gold)}
   .action-item .aps{font-family:var(--mono);font-size:11px;color:var(--mut);font-weight:400}
+  /* stats / visualisations */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;min-width:0}
+  .stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+  .stat .v{font-family:var(--mono);font-weight:700;font-size:22px;margin-top:6px;overflow-wrap:anywhere;line-height:1.1}
+  .stat .s{font-size:11px;color:var(--mut);margin-top:3px;overflow-wrap:anywhere}
+  .viz{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-bottom:16px}
+  .viz h3{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 14px;font-weight:600}
+  .dbar{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .dbar-name{width:62px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13px}
+  .dbar-track{flex:1;position:relative;height:18px;background:var(--panel2);border-radius:5px;min-width:0}
+  .dbar-track::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line2)}
+  .dbar-fill{position:absolute;top:2px;bottom:2px;border-radius:4px;max-width:50%}
+  .dbar-fill.pos{left:50%;background:var(--mint)} .dbar-fill.neg{right:50%;background:var(--red)}
+  .dbar-val{width:50px;flex-shrink:0;text-align:right;font-family:var(--mono);font-size:13px}
+  .wr{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .wr-name{width:62px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13px}
+  .wr-track{flex:1;height:18px;background:var(--panel2);border-radius:5px;overflow:hidden;min-width:0}
+  .wr-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--mint));border-radius:5px;min-width:2px}
+  .wr-val{width:74px;flex-shrink:0;text-align:right;font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .legend{display:flex;flex-wrap:wrap;gap:9px 12px;margin-top:13px}
+  .legend span{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .legend i{width:9px;height:9px;border-radius:2px;flex-shrink:0}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1c241f;font-weight:600;font-size:13px;padding:11px 18px;border-radius:10px;z-index:60;max-width:90%;text-align:center}
   .gate{max-width:360px;margin:80px auto;text-align:center;padding:0 16px}
   .splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--ink);z-index:80;padding:env(safe-area-inset-top) 16px 0}
@@ -197,7 +221,7 @@ function render(){
   app.appendChild(header());
   app.appendChild(tabs());
   const main=el(`<div class="wrap"></div>`);
-  ({matches:vMatches,overall:vOverall,mybets:vMyBets,table:vTable,action:vAction,admin:vAdmin}[tab])(main);
+  ({matches:vMatches,overall:vOverall,mybets:vMyBets,table:vTable,stats:vStats,action:vAction,admin:vAdmin}[tab])(main);
   app.appendChild(main);
   if(slip) app.appendChild(slipEl());
   startTick();
@@ -252,7 +276,7 @@ function header(){
   return h;
 }
 function tabs(){
-  const t=[["matches","Matches"],["overall","Overall"],["mybets","My bets"],["table","Table"],["action","Action"],["admin","Admin"]];
+  const t=[["matches","Matches"],["overall","Overall"],["mybets","My bets"],["table","Table"],["stats","Stats"],["action","Action"],["admin","Admin"]];
   const n=el(`<nav class="tabs"><div class="wrap">${t.map(([k,l])=>`<button class="tab ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</div></nav>`);
   n.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
   requestAnimationFrame(()=>n.querySelector(".tab.on")?.scrollIntoView({inline:"center",block:"nearest"}));
@@ -394,6 +418,143 @@ function openText(){
   }); return out;
 }
 function copy(t){ navigator.clipboard?.writeText(t).then(()=>toast("Copied — paste in WhatsApp"),()=>toast("Copy failed")); }
+
+/* ----------------------------- stats ----------------------------- */
+const PALETTE=["#e8b23a","#62c79a","#5aa9e6","#c792ea","#f78c6c","#89ddff","#f07178","#a6e22e","#ffcb6b","#ff8fab"];
+const profitOf=b=>Number(b.stake)*(Number(b.odds)-1);
+const pNameById=id=>players.find(p=>p.id===id)?.name||"?";
+
+function vStats(main){
+  const s=el(`<section><h2 class="sec">Stats &amp; visualisations</h2></section>`);
+  if(!bets.length){ s.appendChild(el(`<div class="empty">No bets yet — stats appear once the action starts.</div>`)); main.appendChild(s); return; }
+
+  // per-player enriched stats (only players who've bet)
+  const stat=standings.map((r,i)=>{
+    const pb=bets.filter(b=>b.player_id===r.player_id);
+    const sb=pb.filter(b=>b.status==="won"||b.status==="lost");
+    const wins=pb.filter(b=>b.status==="won");
+    const staked=pb.reduce((a,b)=>a+Number(b.stake),0);
+    const avgOdds=pb.length?pb.reduce((a,b)=>a+Number(b.odds),0)/pb.length:0;
+    const biggestWin=wins.reduce((m,b)=>Math.max(m,profitOf(b)),0);
+    return {id:r.player_id,name:r.name,net:Number(r.net),wins:wins.length,losses:Number(r.losses),
+            staked,betCount:pb.length,settledCount:sb.length,avgOdds,biggestWin,
+            winRate:sb.length?wins.length/sb.length:0};
+  }).filter(p=>p.betCount>0)
+    .sort((a,b)=>b.staked-a.staked)
+    .map((p,i)=>({...p,color:PALETTE[i%PALETTE.length]}));
+
+  // ---- hero cards ----
+  const settled=bets.filter(b=>b.status==="won"||b.status==="lost");
+  const totalWagered=stat.reduce((a,p)=>a+p.staked,0);
+  const hp=housePnl();
+  const wrPct=settled.length?Math.round(settled.filter(b=>b.status==="won").length/settled.length*100):0;
+  let bw={amt:0,name:"—"};
+  settled.filter(b=>b.status==="won").forEach(b=>{const p=profitOf(b); if(p>bw.amt) bw={amt:p,name:pNameById(b.player_id)};});
+
+  s.appendChild(el(`<div class="stat-grid">
+    <div class="stat"><div class="k">💰 Total wagered</div><div class="v num">${totalWagered.toFixed(0)}</div><div class="s">${bets.length} bets placed</div></div>
+    <div class="stat"><div class="k">🏦 House P&amp;L</div><div class="v num" style="color:${hp>=0?"var(--mint)":"var(--red)"}">${hp>=0?"+":""}${hp.toFixed(0)}</div><div class="s">${hp>=0?"house is up":"punters ahead"}</div></div>
+    <div class="stat"><div class="k">🎯 Settled</div><div class="v num">${settled.length}</div><div class="s">${wrPct}% punter win rate</div></div>
+    <div class="stat"><div class="k">🔥 Biggest win</div><div class="v num" style="color:var(--mint)">+${bw.amt.toFixed(0)}</div><div class="s">${bw.name}</div></div>
+  </div>`));
+
+  // ---- P&L race (diverging bars) ----
+  const race=[...stat].sort((a,b)=>b.net-a.net);
+  const maxAbs=Math.max(1,...race.map(p=>Math.abs(p.net)));
+  const raceViz=el(`<div class="viz"><h3>📊 P&amp;L race</h3></div>`);
+  race.forEach(p=>{
+    const pct=Math.abs(p.net)/maxAbs*50;
+    raceViz.appendChild(el(`<div class="dbar">
+      <div class="dbar-name">${p.name}</div>
+      <div class="dbar-track"><div class="dbar-fill ${p.net>=0?"pos":"neg"}" style="width:${pct.toFixed(1)}%"></div></div>
+      <div class="dbar-val" style="color:${p.net>=0?"var(--mint)":"var(--red)"}">${p.net>=0?"+":""}${p.net.toFixed(0)}</div>
+    </div>`));
+  });
+  s.appendChild(raceViz);
+
+  // ---- balance progression line chart ----
+  s.appendChild(balanceChart(stat));
+
+  // ---- win rate bars ----
+  const wrViz=el(`<div class="viz"><h3>🎯 Win rate</h3></div>`);
+  const wrRows=[...stat].filter(p=>p.settledCount>0).sort((a,b)=>b.winRate-a.winRate);
+  if(!wrRows.length) wrViz.appendChild(el(`<div class="empty" style="padding:10px 0">No settled bets yet.</div>`));
+  wrRows.forEach(p=>{
+    wrViz.appendChild(el(`<div class="wr">
+      <div class="wr-name">${p.name}</div>
+      <div class="wr-track"><div class="wr-fill" style="width:${Math.round(p.winRate*100)}%"></div></div>
+      <div class="wr-val">${Math.round(p.winRate*100)}% · ${p.wins}/${p.settledCount}</div>
+    </div>`));
+  });
+  s.appendChild(wrViz);
+
+  // ---- hall of fame ----
+  const byOdds=[...stat].sort((a,b)=>b.avgOdds-a.avgOdds)[0];
+  const byVol=[...stat].sort((a,b)=>b.staked-a.staked)[0];
+  const byActive=[...stat].sort((a,b)=>b.betCount-a.betCount)[0];
+  let bl={amt:0,name:"—"};
+  settled.filter(b=>b.status==="lost").forEach(b=>{const l=Number(b.stake); if(l>bl.amt) bl={amt:l,name:pNameById(b.player_id)};});
+  s.appendChild(el(`<div class="viz"><h3>🏆 Hall of fame</h3>
+    <div class="stat-grid" style="margin:0">
+      <div class="stat"><div class="k">🎲 Highest roller</div><div class="v" style="font-size:16px">${byOdds?byOdds.name:"—"}</div><div class="s">avg ${byOdds?byOdds.avgOdds.toFixed(2):"–"} odds</div></div>
+      <div class="stat"><div class="k">💸 Biggest gambler</div><div class="v" style="font-size:16px">${byVol?byVol.name:"—"}</div><div class="s">${byVol?byVol.staked.toFixed(0):0} staked</div></div>
+      <div class="stat"><div class="k">⚡ Most active</div><div class="v" style="font-size:16px">${byActive?byActive.name:"—"}</div><div class="s">${byActive?byActive.betCount:0} bets placed</div></div>
+      <div class="stat"><div class="k">💀 Biggest single loss</div><div class="v num" style="font-size:16px;color:var(--red)">-${bl.amt.toFixed(0)}</div><div class="s">${bl.name}</div></div>
+    </div></div>`));
+
+  main.appendChild(s);
+}
+
+function balanceChart(stat){
+  const viz=el(`<div class="viz"><h3>📈 Balance progression</h3></div>`);
+  const settled=bets.filter(b=>b.status==="won"||b.status==="lost")
+    .slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  if(settled.length<2){ viz.appendChild(el(`<div class="empty" style="padding:18px 0">Not enough settled bets yet to chart a trend.</div>`)); return viz; }
+
+  const t0=new Date(settled[0].created_at).getTime();
+  const t1=new Date(settled[settled.length-1].created_at).getTime();
+  const span=Math.max(1,t1-t0);
+  const colorOf={},nameOf={}; stat.forEach(p=>{colorOf[p.id]=p.color;nameOf[p.id]=p.name;});
+
+  // cumulative realised P&L per player, in time order
+  const series={},run={};
+  stat.forEach(p=>{ series[p.id]=[{t:t0,y:0}]; run[p.id]=0; });
+  settled.forEach(b=>{
+    if(!series[b.player_id]){ series[b.player_id]=[{t:t0,y:0}]; run[b.player_id]=0; }
+    run[b.player_id]+=b.status==="won"?profitOf(b):-Number(b.stake);
+    series[b.player_id].push({t:new Date(b.created_at).getTime(),y:run[b.player_id]});
+  });
+  // extend each line flat to the right edge
+  Object.values(series).forEach(pts=>{ const last=pts[pts.length-1]; if(last.t<t1) pts.push({t:t1,y:last.y}); });
+
+  let yMin=0,yMax=0;
+  Object.values(series).forEach(pts=>pts.forEach(pt=>{ if(pt.y<yMin)yMin=pt.y; if(pt.y>yMax)yMax=pt.y; }));
+  if(yMin===yMax){ yMin-=1; yMax+=1; }
+  const padY=(yMax-yMin)*0.12; yMin-=padY; yMax+=padY;
+
+  const W=320,H=180,L=6,R=6,TP=8,BT=8;
+  const X=t=>L+(t-t0)/span*(W-L-R);
+  const Y=v=>TP+(yMax-v)/(yMax-yMin)*(H-TP-BT);
+  const z=Y(0).toFixed(1);
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;height:auto">`;
+  svg+=`<line x1="${L}" y1="${z}" x2="${W-R}" y2="${z}" style="stroke:#345244" stroke-width="1" stroke-dasharray="3 3"/>`;
+  Object.entries(series).forEach(([id,pts])=>{
+    if(pts.length<2) return;
+    const c=colorOf[id]||"#8aa090";
+    const d=pts.map((pt,i)=>`${i?"L":"M"}${X(pt.t).toFixed(1)} ${Y(pt.y).toFixed(1)}`).join(" ");
+    svg+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const lp=pts[pts.length-1];
+    svg+=`<circle cx="${X(lp.t).toFixed(1)}" cy="${Y(lp.y).toFixed(1)}" r="2.6" fill="${c}"/>`;
+  });
+  svg+=`</svg>`;
+  viz.appendChild(el(svg));
+
+  const finals=Object.entries(series).map(([id,pts])=>({name:nameOf[id]||"?",y:pts[pts.length-1].y,color:colorOf[id]||"#8aa090"}))
+    .sort((a,b)=>b.y-a.y);
+  viz.appendChild(el(`<div class="legend">${finals.map(f=>`<span><i style="background:${f.color}"></i>${f.name} ${f.y>=0?"+":""}${f.y.toFixed(0)}</span>`).join("")}</div>`));
+  return viz;
+}
 
 function vAction(main){
   const s=el(`<section><h2 class="sec">Today's action</h2></section>`);
