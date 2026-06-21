@@ -448,8 +448,17 @@ function vStats(main){
   const totalWagered=stat.reduce((a,p)=>a+p.staked,0);
   const hp=housePnl();
   const wrPct=settled.length?Math.round(settled.filter(b=>b.status==="won").length/settled.length*100):0;
+  // Group by player+market+option so multiple bets on the same result combine correctly
+  const grouped={};
+  settled.forEach(b=>{
+    const k=`${b.player_id}|${b.market_id}|${b.option_key}`;
+    if(!grouped[k]) grouped[k]={player_id:b.player_id,status:b.status,stake:0,profit:0};
+    grouped[k].stake+=Number(b.stake);
+    if(b.status==="won") grouped[k].profit+=profitOf(b);
+  });
+  const groupedList=Object.values(grouped);
   let bw={amt:0,name:"—"};
-  settled.filter(b=>b.status==="won").forEach(b=>{const p=profitOf(b); if(p>bw.amt) bw={amt:p,name:pNameById(b.player_id)};});
+  groupedList.filter(g=>g.status==="won").forEach(g=>{if(g.profit>bw.amt) bw={amt:g.profit,name:pNameById(g.player_id)};});
 
   s.appendChild(el(`<div class="stat-grid">
     <div class="stat"><div class="k">💰 Total wagered</div><div class="v num">${totalWagered.toFixed(0)}</div><div class="s">${bets.length} bets placed</div></div>
@@ -493,7 +502,7 @@ function vStats(main){
   const byVol=[...stat].sort((a,b)=>b.staked-a.staked)[0];
   const byActive=[...stat].sort((a,b)=>b.betCount-a.betCount)[0];
   let bl={amt:0,name:"—"};
-  settled.filter(b=>b.status==="lost").forEach(b=>{const l=Number(b.stake); if(l>bl.amt) bl={amt:l,name:pNameById(b.player_id)};});
+  groupedList.filter(g=>g.status==="lost").forEach(g=>{if(g.stake>bl.amt) bl={amt:g.stake,name:pNameById(g.player_id)};});
   s.appendChild(el(`<div class="viz"><h3>🏆 Hall of fame</h3>
     <div class="stat-grid" style="margin:0">
       <div class="stat"><div class="k">🎲 Highest roller</div><div class="v" style="font-size:16px">${byOdds?byOdds.name:"—"}</div><div class="s">avg ${byOdds?byOdds.avgOdds.toFixed(2):"–"} odds</div></div>
