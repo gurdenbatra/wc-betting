@@ -31,6 +31,10 @@ export default async (req) => {
   if (SECRET && tok !== SECRET && tok !== ADMIN_SECRET)
     return new Response("forbidden", { status: 403 });
 
+  // refresh=1 also re-prices EXISTING open markets that have no bets yet
+  // (lines with bets, or already settled, are never touched).
+  const refresh = url.searchParams.get("refresh") === "1";
+
   // 1) odds (decimal), EU region, two markets
   const oddsUrl =
     `https://api.the-odds-api.com/v4/sports/${SPORT}/odds` +
@@ -61,28 +65,51 @@ export default async (req) => {
   const fxRes = await sb(`fixtures?pool_id=eq.${POOL_ID}&select=id,ext_id`);
   const fxByExt = Object.fromEntries((await fxRes.json()).map((f) => [f.ext_id, f.id]));
 
-  // 4) which fixtures already have markets (don't overwrite a posted line)
+  // 4) existing markets (don't overwrite a posted line) — map "fixtureId:key" -> {id, result}
   const ids = Object.values(fxByExt);
-  let existing = new Set();
+  const existing = {};
   if (ids.length) {
-    const mRes = await sb(`markets?fixture_id=in.(${ids.join(",")})&select=fixture_id,key`);
-    existing = new Set((await mRes.json()).map((m) => `${m.fixture_id}:${m.key}`));
+    const mRes = await sb(`markets?fixture_id=in.(${ids.join(",")})&select=id,fixture_id,key,result`);
+    for (const m of await mRes.json()) existing[`${m.fixture_id}:${m.key}`] = { id: m.id, result: m.result };
   }
 
-  // 5) build + insert new markets from the first bookmaker that offers each
+  // which markets already have bets (only relevant in refresh mode)
+  let betMktIds = new Set();
+  if (refresh && ids.length) {
+    const bRes = await sb(`bets?pool_id=eq.${POOL_ID}&select=market_id`);
+    betMktIds = new Set((await bRes.json()).map((b) => b.market_id));
+  }
+  // a market is re-priceable if it's open (no result) and has no bets
+  const canReprice = (m) => m && m.result === null && !betMktIds.has(m.id);
+
+  // 5) build new markets (first bookmaker that offers each), and — in refresh
+  //    mode — re-price existing open, bet-free markets with the latest odds.
   const newMarkets = [];
+  const updates = []; // { id, body }
   for (const e of events) {
     const fid = fxByExt[e.id];
     if (!fid) continue;
+
     const h2h = pickMarket(e, "h2h");
-    if (h2h && !existing.has(`${fid}:h2h`)) {
+    if (h2h) {
+      const exH = existing[`${fid}:h2h`];
       const o = mapH2H(h2h, e.home_team, e.away_team);
-      if (o) newMarkets.push({ fixture_id: fid, key: "h2h", label: "Match result", point: null, outcomes: o });
+      if (!exH) {
+        if (o) newMarkets.push({ fixture_id: fid, key: "h2h", label: "Match result", point: null, outcomes: o });
+      } else if (refresh && o && canReprice(exH)) {
+        updates.push({ id: exH.id, body: { outcomes: o } });
+      }
     }
+
     const tot = pickMarket(e, "totals");
-    if (tot && !existing.has(`${fid}:totals`)) {
+    if (tot) {
+      const exT = existing[`${fid}:totals`];
       const m = mapTotals(tot);
-      if (m) newMarkets.push({ fixture_id: fid, key: "totals", label: `Total goals O/U ${m.point}`, point: m.point, outcomes: m.outcomes });
+      if (!exT) {
+        if (m) newMarkets.push({ fixture_id: fid, key: "totals", label: `Total goals O/U ${m.point}`, point: m.point, outcomes: m.outcomes });
+      } else if (refresh && m && canReprice(exT)) {
+        updates.push({ id: exT.id, body: { outcomes: m.outcomes, point: m.point, label: `Total goals O/U ${m.point}` } });
+      }
     }
   }
   if (newMarkets.length) {
@@ -90,9 +117,21 @@ export default async (req) => {
     if (!ins.ok) return new Response(`markets insert: ${await ins.text()}`, { status: 502 });
   }
 
+  let updated = 0;
+  for (const u of updates) {
+    const r = await sb(`markets?id=eq.${u.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(u.body),
+    });
+    if (r.ok) updated++;
+  }
+
   return Response.json({
     events: events.length,
     new_markets: newMarkets.length,
+    updated_markets: updated,
+    refreshed: refresh,
     credits_remaining: remaining,
   });
 };
