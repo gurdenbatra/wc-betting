@@ -178,7 +178,9 @@ async function loadAll(){
       if(match){ me=match.id; localStorage.setItem("wc26me_"+ROOM_CODE,match.id); history.replaceState(null,"",location.pathname); }
     }
   }
-  render();
+  // Don't tear down an open bet slip on a background refresh — a render here
+  // would reset the stake the user is typing. Fresh data paints when it closes.
+  if(!slip) render();
 }
 function setMe(id){ me=id; localStorage.setItem("wc26me_"+ROOM_CODE,id); render(); }
 
@@ -331,12 +333,12 @@ function slipEl(){
       <div class="tk-row">Odds<b class="num">${Number(opt.odds).toFixed(2)}</b></div>
       <div class="perf"></div>
       <div class="chips"></div>
-      <div class="stake-in"><input type="number" min="1" value="100"/><span class="num" style="color:#3a463e">pts</span></div>
+      <div class="stake-in"><input type="number" min="1" value="${slip.stake??100}"/><span class="num" style="color:#3a463e">pts</span></div>
       <div class="tk-row">Potential return<span class="ret num" style="color:#1c241f">—</span></div>
       <div class="tk-actions"><button class="btn btn-x">Cancel</button><button class="btn btn-go">Place bet</button></div>
     </div></div></div>`);
   const inp=s.querySelector("input"), ret=s.querySelector(".ret");
-  const up=()=>ret.textContent=((parseFloat(inp.value)||0)*Number(opt.odds)).toFixed(0);
+  const up=()=>{ slip.stake=inp.value; ret.textContent=((parseFloat(inp.value)||0)*Number(opt.odds)).toFixed(0); };
   inp.oninput=up; up();
   const chips=s.querySelector(".chips");
   [50,100,250,500,1000].forEach(v=>{ const b=el(`<button class="chip">${v}</button>`);
