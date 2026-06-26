@@ -156,7 +156,7 @@ const sbc = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById("app");
 
 let pool=null, players=[], fixtures=[], bets=[], standings=[];
-let me=null, tab="matches", slip=null, adminTok=null, betFilter="all";
+let me=null, tab="matches", slip=null, adminTok=null, betFilter="all", actionView="active";
 
 async function loadAll(){
   const { data:p } = await sbc.from("pools").select("*").eq("room_code",ROOM_CODE).single();
@@ -566,23 +566,42 @@ function balanceChart(stat){
 }
 
 function vAction(main){
-  const s=el(`<section><h2 class="sec">Today's action</h2></section>`);
-  const pending=bets.filter(b=>b.status==="pending");
-  if(!pending.length){ s.appendChild(el(`<div class="empty">No active bets yet — be first.</div>`)); main.appendChild(s); return; }
+  const settledView=actionView==="settled";
+  const s=el(`<section><h2 class="sec">${settledView?"Settled action":"Today's action"}</h2></section>`);
+
+  // toggle pills
+  const toggle=el(`<div style="display:flex;gap:6px;margin-bottom:14px"></div>`);
+  [["active","Active"],["settled","Settled"]].forEach(([k,lbl])=>{
+    const on=actionView===k;
+    const btn=el(`<button class="chip" style="font-size:12px;padding:5px 14px;${on?"background:var(--gold);color:#1c241f;border-color:var(--gold)":""}">${lbl}</button>`);
+    btn.onclick=()=>{actionView=k;render();};
+    toggle.appendChild(btn);
+  });
+  s.appendChild(toggle);
+
+  const shown=bets.filter(b=>settledView?(b.status==="won"||b.status==="lost"):b.status==="pending");
+  if(!shown.length){
+    s.appendChild(el(`<div class="empty">${settledView?"No settled bets yet.":"No active bets yet — be first."}</div>`));
+    main.appendChild(s); return;
+  }
 
   const byFx={};
-  pending.forEach(b=>{ (byFx[b.fixture_id]||(byFx[b.fixture_id]=[])).push(b); });
+  shown.forEach(b=>{ (byFx[b.fixture_id]||(byFx[b.fixture_id]=[])).push(b); });
 
-  const activeFx=fixtures
+  const orderedFx=fixtures
     .filter(fx=>byFx[fx.id])
-    .sort((a,b)=>new Date(a.commence_time)-new Date(b.commence_time));
+    .sort((a,b)=>settledView
+      ?new Date(b.commence_time)-new Date(a.commence_time)   // settled: most recent first
+      :new Date(a.commence_time)-new Date(b.commence_time)); // active: next-up first
 
-  activeFx.forEach(fx=>{
+  orderedFx.forEach(fx=>{
     const fxBets=byFx[fx.id];
     const lk=locked(fx); const c=cd(fx.commence_time);
+    const score=(fx.home_score!=null&&fx.away_score!=null)?`<span class="cd">${fx.home_score}–${fx.away_score}</span>`:"";
+    const status=settledView?score:(lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}">${c.txt}</span>`);
     const card=el(`<div class="fx"><div class="fx-top">
       <div><span class="stage">${fx.stage||""}</span><div class="teams">${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}</div></div>
-      <div class="ko">${lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}">${c.txt}</span>`}</div>
+      <div class="ko">${status}</div>
     </div></div>`);
 
     const byMkt={};
@@ -594,15 +613,17 @@ function vAction(main){
       mBets.forEach(b=>{ (byOpt[b.option_key]||(byOpt[b.option_key]=[])).push(b); });
       const totalStaked=mBets.reduce((s,b)=>s+Number(b.stake),0);
 
-      const m=el(`<div class="mkt"><div class="mkt-h">${mkt.label}<span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--mut)">${totalStaked.toFixed(0)} pts in pool</span></div><div class="action-grid"></div></div>`);
+      const m=el(`<div class="mkt"><div class="mkt-h">${mkt.label}${settledView&&mkt.result?`<span class="res">✓ ${labelFor(mkt,mkt.result)}</span>`:""}<span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--mut)">${totalStaked.toFixed(0)} pts in pool</span></div><div class="action-grid"></div></div>`);
       const grid=m.querySelector(".action-grid");
 
       (mkt.outcomes||[]).forEach(opt=>{
         const optBets=byOpt[opt.key]||[]; if(!optBets.length) return;
-        const col=el(`<div class="action-col"><div class="action-col-head"><span>${opt.label}</span><span class="ao">${Number(opt.odds).toFixed(2)}</span></div></div>`);
+        const winningOpt=settledView&&mkt.result===opt.key;
+        const col=el(`<div class="action-col"${winningOpt?' style="border-color:var(--mint)"':""}><div class="action-col-head"><span>${opt.label}</span><span class="ao">${Number(opt.odds).toFixed(2)}</span></div></div>`);
         optBets.forEach(b=>{
           const pname=players.find(p=>p.id===b.player_id)?.name||"?";
-          col.appendChild(el(`<div class="action-item ${b.player_id===me?"mine":""}"><span>${pname}</span><span class="aps">${Number(b.stake).toFixed(0)}</span></div>`));
+          const mark=settledView?(b.status==="won"?` style="color:var(--mint)"`:b.status==="lost"?` style="color:var(--red)"`:""):"";
+          col.appendChild(el(`<div class="action-item ${b.player_id===me?"mine":""}"${mark}><span>${pname}</span><span class="aps">${Number(b.stake).toFixed(0)}</span></div>`));
         });
         grid.appendChild(col);
       });
