@@ -757,7 +757,7 @@ function vAdmin(main){
   s.appendChild(linksCard);
   // create custom market
   const c=el(`<div class="card"><h2 class="sec">Add a fun bet</h2>
-    <label class="fld">Match</label><select class="in" id="cm_fx">${fixtures.map(f=>`<option value="${f.id}">${f.home} v ${f.away}</option>`).join("")}</select>
+    <label class="fld">Match</label><select class="in" id="cm_fx">${fixtures.filter(f=>!locked(f)).sort((a,b)=>new Date(a.commence_time)-new Date(b.commence_time)).map(f=>`<option value="${f.id}">${f.home} v ${f.away}</option>`).join("")}</select>
     <label class="fld">Type</label><select class="in" id="cm_key"><option value="custom">Custom prop (settle by hand)</option><option value="btts">Both teams to score (auto)</option><option value="cs">Correct score (auto)</option></select>
     <label class="fld">Question</label><input class="in" id="cm_label" placeholder="e.g. Red card in the match?">
     <label class="fld">Options (label · odds · key)</label><div id="cm_opts">
