@@ -664,7 +664,7 @@ function vAdmin(main){
       const r=await fetch(`${FUNCTIONS_BASE}/settle?token=${adminTok}`);
       const j=await r.json().catch(()=>({}));
       res.textContent=r.ok
-        ?`Done — ${j.settled_markets} market${j.settled_markets===1?"":"s"} settled · ${j.credits_remaining} API credits left`
+        ?`Done — ${j.settled_markets} market${j.settled_markets===1?"":"s"} settled${j.knockout_manual?` · ${j.knockout_manual} knockout game${j.knockout_manual===1?"":"s"} need manual settling`:""} · ${j.credits_remaining} API credits left`
         :`Error ${r.status} — check Netlify logs`;
       if(r.ok) loadAll();
     }catch(e){ res.textContent=String(e); }
