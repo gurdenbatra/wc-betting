@@ -44,12 +44,13 @@ export default async (req) => {
   const remaining = r.headers.get("x-requests-remaining");
   const events = await r.json();
 
-  // 2) upsert fixtures
+  // 2) upsert fixtures (stage inferred from kickoff date — the API has no round info)
   const fixtureRows = events.map((e) => ({
     pool_id: POOL_ID,
     ext_id: e.id,
     home: e.home_team,
     away: e.away_team,
+    stage: stageFor(e.commence_time),
     commence_time: e.commence_time,
   }));
   if (fixtureRows.length) {
@@ -135,6 +136,25 @@ export default async (req) => {
     credits_remaining: remaining,
   });
 };
+
+// WC 2026 schedule → stage label, inferred from kickoff (UTC). Boundaries sit in
+// the rest-day gaps / are nudged to noon to absorb late games that spill into the
+// next UTC day. The API gives no round info, so date is the only signal.
+const STAGE_CUTOFFS = [
+  ["2026-06-28T00:00:00Z", "Group stage"],   // group stage ends 27 Jun
+  ["2026-07-04T12:00:00Z", "Round of 32"],   // 28 Jun – 3 Jul
+  ["2026-07-09T00:00:00Z", "Round of 16"],   // 4 Jul – 7 Jul
+  ["2026-07-14T00:00:00Z", "Quarter-final"], // 9 Jul – 11 Jul
+  ["2026-07-18T00:00:00Z", "Semi-final"],    // 14 Jul – 15 Jul
+  ["2026-07-19T00:00:00Z", "Third place"],   // 18 Jul
+];
+function stageFor(commence_time) {
+  const t = new Date(commence_time).getTime();
+  for (const [before, stage] of STAGE_CUTOFFS) {
+    if (t < new Date(before).getTime()) return stage;
+  }
+  return "Final"; // 19 Jul onward
+}
 
 function pickMarket(event, key) {
   for (const bk of event.bookmakers || []) {
