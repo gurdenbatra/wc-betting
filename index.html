@@ -720,9 +720,14 @@ function vAction(main){
 
   const orderedFx=fixtures
     .filter(fx=>byFx[fx.id])
-    .sort((a,b)=>settledView
-      ?new Date(b.commence_time)-new Date(a.commence_time)   // settled: most recent first
-      :new Date(a.commence_time)-new Date(b.commence_time)); // active: next-up first
+    .sort((a,b)=>{
+      // tournament futures (WC Winner, Props) always sink to the bottom — real matches first
+      const at=a.stage==="Tournament", bt=b.stage==="Tournament";
+      if(at!==bt) return at?1:-1;
+      return settledView
+        ?new Date(b.commence_time)-new Date(a.commence_time)   // settled: most recent first
+        :new Date(a.commence_time)-new Date(b.commence_time);  // active: next-up first
+    });
 
   orderedFx.forEach(fx=>{
     const fxBets=byFx[fx.id];
