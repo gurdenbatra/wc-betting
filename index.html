@@ -38,11 +38,12 @@
   section{padding-top:20px}
   h2.sec{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
   .fx{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
-  .fx-top{display:flex;align-items:baseline;gap:10px}
+  .fx-top{display:flex;align-items:flex-start;gap:10px}
+  .fx-head{flex:1;min-width:0}
   .stage{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--gold);text-transform:uppercase}
-  .teams{font-size:18px;font-weight:600;margin:3px 0 0}
-  .ko{margin-left:auto;text-align:right}
-  .cd{font-family:var(--mono);font-size:12px;color:var(--mut)} .cd.soon{color:var(--gold)} .cd.live{color:var(--red)}
+  .teams{font-size:18px;font-weight:600;margin:3px 0 0;overflow-wrap:anywhere}
+  .ko{margin-left:auto;text-align:right;flex-shrink:0;min-width:88px}
+  .cd{font-family:var(--mono);font-size:12px;color:var(--mut);white-space:nowrap} .cd.soon{color:var(--gold)} .cd.live{color:var(--red)}
   .locked-tag{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:.1em}
   .mkt{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
   .mkt-h{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.06em;margin-bottom:8px;display:flex;gap:8px}
@@ -259,7 +260,9 @@ function cd(t){
   const ms=new Date(t)-Date.now();
   if(ms<=0) return {txt:"KICKED OFF",cls:"live"};
   const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),s=Math.floor(ms%6e4/1e3);
-  return {txt:"closes in "+(d>0?`${d}d ${h}h ${m}m`:h>0?`${h}h ${m}m ${s}s`:`${m}m ${s}s`),cls:ms<36e5?"soon":""};
+  // Short, fixed-footprint label — seconds only under 1h — so the countdown box
+  // never changes width and the team-name column doesn't jitter as it ticks.
+  return {txt:"in "+(d>0?`${d}d ${h}h`:h>0?`${h}h ${m}m`:`${m}m ${s}s`),cls:ms<36e5?"soon":""};
 }
 
 async function placeBet(stake){
@@ -411,7 +414,7 @@ function fxCard(fx){
   const teamsHtml=fx.stage==="Tournament"?fx.home:`${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}`;
   const stageHtml=fx.stage?`<span class="stage ${ko?"ko":""}">${ko?"⚔️ ":""}${fx.stage}</span>`:"";
   const card=el(`<div class="fx ${ko?"ko":""}"><div class="fx-top">
-      <div>${stageHtml}${hotBadge}<div class="teams">${teamsHtml}</div></div>
+      <div class="fx-head">${stageHtml}${hotBadge}<div class="teams">${teamsHtml}</div></div>
       <div class="ko">${lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}" data-cd="${fx.commence_time}">${c.txt}</span>`}</div>
     </div></div>`);
   (fx.markets||[]).sort((a,b)=>a.key.localeCompare(b.key)).forEach(mkt=>{
@@ -728,7 +731,7 @@ function vAction(main){
     const score=(fx.home_score!=null&&fx.away_score!=null)?`<span class="cd">${fx.home_score}–${fx.away_score}</span>`:"";
     const status=settledView?score:(lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}">${c.txt}</span>`);
     const card=el(`<div class="fx"><div class="fx-top">
-      <div><span class="stage">${fx.stage||""}</span><div class="teams">${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}</div></div>
+      <div class="fx-head"><span class="stage">${fx.stage||""}</span><div class="teams">${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}</div></div>
       <div class="ko">${status}</div>
     </div></div>`);
 
