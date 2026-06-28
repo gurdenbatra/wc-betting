@@ -127,10 +127,10 @@
   .legend{display:flex;flex-wrap:wrap;gap:9px 12px;margin-top:13px}
   .legend span{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--mut)}
   .legend i{width:9px;height:9px;border-radius:2px;flex-shrink:0}
-  /* knockout glow-up */
-  .fx.ko{position:relative;border-color:#4a3a22;background:linear-gradient(180deg,rgba(232,178,58,.05),var(--panel) 70px)}
-  .fx.ko::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,var(--gold),var(--red))}
-  .stage.ko{color:var(--red)}
+  /* knockout glow-up (modifier is .kn — NOT .ko, which is the countdown box) */
+  .fx.kn{position:relative;border-color:#4a3a22;background:linear-gradient(180deg,rgba(232,178,58,.05),var(--panel) 70px)}
+  .fx.kn::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,var(--gold),var(--red))}
+  .stage.kn{color:var(--red)}
   .ko-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,rgba(229,83,60,.16),rgba(232,178,58,.09));border:1px solid #4a3a22;border-radius:14px;padding:13px 16px;margin-bottom:16px}
   .ko-banner .ic{font-size:22px;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(232,178,58,.4))}
   .ko-banner .rd{font-family:var(--mono);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px;color:var(--gold)}
@@ -148,7 +148,6 @@
   .br-col{flex:0 0 158px;min-width:158px}
   .br-col h4{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;text-align:center}
   .br-m{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:10px}
-  .br-m.ko::before{display:none}
   .br-t{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:2px 0;color:var(--mut)}
   .br-t .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   .br-t.win{color:var(--mint);font-weight:700}
@@ -412,8 +411,8 @@ function fxCard(fx){
   const ko=isKO(fx);
   const hotBadge=(!lk&&hotIds().has(fx.id))?`<span class="hot">🔥 HOT</span>`:"";
   const teamsHtml=fx.stage==="Tournament"?fx.home:`${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}`;
-  const stageHtml=fx.stage?`<span class="stage ${ko?"ko":""}">${ko?"⚔️ ":""}${fx.stage}</span>`:"";
-  const card=el(`<div class="fx ${ko?"ko":""}"><div class="fx-top">
+  const stageHtml=fx.stage?`<span class="stage ${ko?"kn":""}">${ko?"⚔️ ":""}${fx.stage}</span>`:"";
+  const card=el(`<div class="fx ${ko?"kn":""}"><div class="fx-top">
       <div class="fx-head">${stageHtml}${hotBadge}<div class="teams">${teamsHtml}</div></div>
       <div class="ko">${lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}" data-cd="${fx.commence_time}">${c.txt}</span>`}</div>
     </div></div>`);
