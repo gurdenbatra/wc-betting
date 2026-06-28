@@ -140,13 +140,16 @@ export default async (req) => {
 // WC 2026 schedule → stage label, inferred from kickoff (UTC). Boundaries sit in
 // the rest-day gaps / are nudged to noon to absorb late games that spill into the
 // next UTC day. The API gives no round info, so date is the only signal.
+// All venues are in the Americas (UTC-4…-8), so an evening kickoff rolls into the
+// NEXT UTC day. Cutoffs sit at noon UTC (or in rest-day gaps) so late local games
+// stay in the right round instead of leaking into the next one.
 const STAGE_CUTOFFS = [
-  ["2026-06-28T00:00:00Z", "Group stage"],   // group stage ends 27 Jun
+  ["2026-06-28T12:00:00Z", "Group stage"],   // through 27 Jun (late games → 28 Jun UTC)
   ["2026-07-04T12:00:00Z", "Round of 32"],   // 28 Jun – 3 Jul
   ["2026-07-09T00:00:00Z", "Round of 16"],   // 4 Jul – 7 Jul
   ["2026-07-14T00:00:00Z", "Quarter-final"], // 9 Jul – 11 Jul
   ["2026-07-18T00:00:00Z", "Semi-final"],    // 14 Jul – 15 Jul
-  ["2026-07-19T00:00:00Z", "Third place"],   // 18 Jul
+  ["2026-07-19T12:00:00Z", "Third place"],   // 18 Jul (late game → 19 Jul UTC)
 ];
 function stageFor(commence_time) {
   const t = new Date(commence_time).getTime();
