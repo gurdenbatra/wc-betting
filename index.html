@@ -140,6 +140,20 @@
   .lb-row.lead{background:linear-gradient(90deg,rgba(232,178,58,.12),transparent)}
   .rank.medal{font-size:17px;width:24px;text-align:center}
   @media (prefers-reduced-motion:reduce){.cd.soon,.cd.live{animation:none}}
+  .hot{display:inline-block;margin-left:8px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--red);background:rgba(229,83,60,.14);border:1px solid rgba(229,83,60,.4);border-radius:999px;padding:2px 7px;vertical-align:middle}
+  /* bracket */
+  .bracket{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:8px}
+  .bracket::-webkit-scrollbar{display:none}
+  .br-col{flex:0 0 158px;min-width:158px}
+  .br-col h4{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;text-align:center}
+  .br-m{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:10px}
+  .br-m.ko::before{display:none}
+  .br-t{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:2px 0;color:var(--mut)}
+  .br-t .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .br-t.win{color:var(--mint);font-weight:700}
+  .br-t .sc{font-family:var(--mono);flex-shrink:0}
+  .br-when{font-family:var(--mono);font-size:9px;color:var(--mut);text-align:center;margin-top:5px;letter-spacing:.04em}
+  .br-tbd{color:var(--mut);font-family:var(--mono);font-size:10px;text-align:center;padding:18px 6px;border:1px dashed var(--line);border-radius:10px}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1c241f;font-weight:600;font-size:13px;padding:11px 18px;border-radius:10px;z-index:60;max-width:90%;text-align:center}
   .gate{max-width:360px;margin:80px auto;text-align:center;padding:0 16px}
   .splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--ink);z-index:80;padding:env(safe-area-inset-top) 16px 0}
@@ -276,7 +290,7 @@ function render(){
   app.appendChild(header());
   app.appendChild(tabs());
   const main=el(`<div class="wrap"></div>`);
-  ({matches:vMatches,overall:vOverall,mybets:vMyBets,table:vTable,stats:vStats,action:vAction,admin:vAdmin}[tab])(main);
+  ({matches:vMatches,overall:vOverall,bracket:vBracket,mybets:vMyBets,table:vTable,stats:vStats,action:vAction,admin:vAdmin}[tab])(main);
   app.appendChild(main);
   if(slip) app.appendChild(slipEl());
   startTick();
@@ -331,7 +345,7 @@ function header(){
   return h;
 }
 function tabs(){
-  const t=[["matches","Matches"],["overall","Overall"],["mybets","My bets"],["table","Table"],["stats","Stats"],["action","Action"],["admin","Admin"]];
+  const t=[["matches","Matches"],["overall","Overall"],["bracket","Bracket"],["mybets","My bets"],["table","Table"],["stats","Stats"],["action","Action"],["admin","Admin"]];
   const n=el(`<nav class="tabs"><div class="wrap">${t.map(([k,l])=>`<button class="tab ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</div></nav>`);
   n.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
   requestAnimationFrame(()=>n.querySelector(".tab.on")?.scrollIntoView({inline:"center",block:"nearest"}));
@@ -357,13 +371,47 @@ function vOverall(main){
   overall.forEach(fx=>s.appendChild(fxCard(fx)));
   main.appendChild(s);
 }
+function vBracket(main){
+  const s=el(`<section><h2 class="sec">Knockout bracket</h2></section>`);
+  const koFx=fixtures.filter(isKO);
+  if(!koFx.length){ s.appendChild(el(`<div class="empty">The bracket lights up once knockout fixtures are added.</div>`)); main.appendChild(s); return; }
+  const path=["Round of 32","Round of 16","Quarter-final","Semi-final","Final"];
+  const wrap=el(`<div class="bracket"></div>`);
+  const colFor=(rd,allowTbd)=>{
+    const games=koFx.filter(fx=>fx.stage===rd).sort((a,b)=>new Date(a.commence_time)-new Date(b.commence_time));
+    const col=el(`<div class="br-col"><h4>${rd}</h4></div>`);
+    if(!games.length){ if(allowTbd) col.appendChild(el(`<div class="br-tbd">TBD</div>`)); return col; }
+    games.forEach(fx=>{
+      const hs=fx.home_score, as=fx.away_score, done=hs!=null&&as!=null;
+      const hw=done&&hs>as, aw=done&&as>hs;
+      col.appendChild(el(`<div class="br-m">
+        <div class="br-t ${hw?"win":""}"><span class="nm">${fx.home}</span><span class="sc">${done?hs:""}</span></div>
+        <div class="br-t ${aw?"win":""}"><span class="nm">${fx.away}</span><span class="sc">${done?as:""}</span></div>
+        <div class="br-when">${done?(hs===as?"AET / pens":"FULL TIME"):(locked(fx)?"LOCKED":cd(fx.commence_time).txt)}</div>
+      </div>`));
+    });
+    return col;
+  };
+  // only show future TBD columns from the earliest round that actually has games
+  let started=false;
+  path.forEach(rd=>{
+    const has=koFx.some(fx=>fx.stage===rd);
+    if(has) started=true;
+    if(has||started) wrap.appendChild(colFor(rd,true));
+  });
+  if(koFx.some(fx=>fx.stage==="Third place")) wrap.appendChild(colFor("Third place",false));
+  s.appendChild(wrap);
+  s.appendChild(el(`<p class="hint" style="margin-top:4px">Scroll sideways to follow the road to the final. Draws shown as AET / pens — advancing side is decided off the scoreline.</p>`));
+  main.appendChild(s);
+}
 function fxCard(fx){
   const lk=locked(fx); const c=cd(fx.commence_time);
   const ko=isKO(fx);
+  const hotBadge=(!lk&&hotIds().has(fx.id))?`<span class="hot">🔥 HOT</span>`:"";
   const teamsHtml=fx.stage==="Tournament"?fx.home:`${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}`;
   const stageHtml=fx.stage?`<span class="stage ${ko?"ko":""}">${ko?"⚔️ ":""}${fx.stage}</span>`:"";
   const card=el(`<div class="fx ${ko?"ko":""}"><div class="fx-top">
-      <div>${stageHtml}<div class="teams">${teamsHtml}</div></div>
+      <div>${stageHtml}${hotBadge}<div class="teams">${teamsHtml}</div></div>
       <div class="ko">${lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}" data-cd="${fx.commence_time}">${c.txt}</span>`}</div>
     </div></div>`);
   (fx.markets||[]).sort((a,b)=>a.key.localeCompare(b.key)).forEach(mkt=>{
@@ -385,6 +433,18 @@ const labelFor=(m,k)=>(m.outcomes||[]).find(o=>o.key===k)?.label||k;
 const KO_STAGES=new Set(["Round of 32","Round of 16","Quarter-final","Semi-final","Third place","Final"]);
 const isKO=fx=>KO_STAGES.has(fx.stage);
 const KO_TAGLINE={"Round of 32":"Win or go home","Round of 16":"Last 16 standing","Quarter-final":"The final eight","Semi-final":"One game from the final","Third place":"Bronze on the line","Final":"For all the marbles"};
+/* fixtures drawing the most pending action — top 3 within 60% of the busiest. Memoised per bets refresh. */
+let _hotCache={ref:null,set:new Set()};
+function hotIds(){
+  if(_hotCache.ref===bets) return _hotCache.set;
+  const stakeByFx={};
+  bets.filter(b=>b.status==="pending").forEach(b=>{ stakeByFx[b.fixture_id]=(stakeByFx[b.fixture_id]||0)+Number(b.stake); });
+  const ranked=fixtures.filter(fx=>!locked(fx)).map(fx=>[fx.id,stakeByFx[fx.id]||0]).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const max=ranked.length?ranked[0][1]:0, set=new Set();
+  ranked.slice(0,3).forEach(([id,v])=>{ if(v>=max*0.6) set.add(id); });
+  _hotCache={ref:bets,set};
+  return set;
+}
 
 function slipEl(){
   const {fx,mkt,opt}=slip;
