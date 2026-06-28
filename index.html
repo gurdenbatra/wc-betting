@@ -126,6 +126,20 @@
   .legend{display:flex;flex-wrap:wrap;gap:9px 12px;margin-top:13px}
   .legend span{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--mut)}
   .legend i{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  /* knockout glow-up */
+  .fx.ko{position:relative;border-color:#4a3a22;background:linear-gradient(180deg,rgba(232,178,58,.05),var(--panel) 70px)}
+  .fx.ko::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,var(--gold),var(--red))}
+  .stage.ko{color:var(--red)}
+  .ko-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,rgba(229,83,60,.16),rgba(232,178,58,.09));border:1px solid #4a3a22;border-radius:14px;padding:13px 16px;margin-bottom:16px}
+  .ko-banner .ic{font-size:22px;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(232,178,58,.4))}
+  .ko-banner .rd{font-family:var(--mono);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px;color:var(--gold)}
+  .ko-banner .tl{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:1px}
+  @keyframes soonpulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .cd.soon{animation:soonpulse 1.4s ease-in-out infinite}
+  .cd.live{animation:soonpulse 1s ease-in-out infinite}
+  .lb-row.lead{background:linear-gradient(90deg,rgba(232,178,58,.12),transparent)}
+  .rank.medal{font-size:17px;width:24px;text-align:center}
+  @media (prefers-reduced-motion:reduce){.cd.soon,.cd.live{animation:none}}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1c241f;font-weight:600;font-size:13px;padding:11px 18px;border-radius:10px;z-index:60;max-width:90%;text-align:center}
   .gate{max-width:360px;margin:80px auto;text-align:center;padding:0 16px}
   .splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--ink);z-index:80;padding:env(safe-area-inset-top) 16px 0}
@@ -181,6 +195,45 @@ async function loadAll(){
   // Don't tear down an open bet slip on a background refresh — a render here
   // would reset the stake the user is typing. Fresh data paints when it closes.
   if(!slip) render();
+  checkWins();
+}
+/* Confetti + toast when the player has newly-won bets since their last visit. */
+function checkWins(){
+  if(!me||me==="bookie"||document.hidden) return;
+  const key="wc26won_"+ROOM_CODE+"_"+me;
+  const wonIds=bets.filter(b=>b.player_id===me&&b.status==="won").map(b=>b.id);
+  let seen=null; try{ seen=JSON.parse(localStorage.getItem(key)||"null"); }catch{}
+  if(!Array.isArray(seen)){ localStorage.setItem(key,JSON.stringify(wonIds)); return; } // first run: seed, don't celebrate
+  const seenSet=new Set(seen);
+  const fresh=bets.filter(b=>b.player_id===me&&b.status==="won"&&!seenSet.has(b.id));
+  localStorage.setItem(key,JSON.stringify(wonIds));
+  if(fresh.length){
+    const profit=fresh.reduce((a,b)=>a+Number(b.stake)*(Number(b.odds)-1),0);
+    celebrate();
+    toast(`🎉 You won ${fresh.length} bet${fresh.length>1?"s":""} · +${profit.toFixed(0)} pts!`);
+  }
+}
+function celebrate(){
+  if(window.matchMedia?.("(prefers-reduced-motion:reduce)").matches) return;
+  const dpr=window.devicePixelRatio||1, cv=document.createElement("canvas");
+  cv.style.cssText="position:fixed;inset:0;pointer-events:none;z-index:9999";
+  const W=cv.width=innerWidth*dpr, H=cv.height=innerHeight*dpr;
+  cv.style.width=innerWidth+"px"; cv.style.height=innerHeight+"px";
+  document.body.appendChild(cv);
+  const ctx=cv.getContext("2d"), cols=["#e8b23a","#62c79a","#e5533c","#ece6d6","#5aa9e6"];
+  const P=Array.from({length:130},()=>({
+    x:W/2+(Math.random()-.5)*W*.4, y:H*.28+(Math.random()-.5)*80,
+    vx:(Math.random()-.5)*15*dpr, vy:(Math.random()*-13-4)*dpr, g:.36*dpr,
+    s:(4+Math.random()*5)*dpr, c:cols[(Math.random()*cols.length)|0],
+    rot:Math.random()*6.28, vr:(Math.random()-.5)*.4 }));
+  const start=performance.now();
+  (function frame(now){
+    ctx.clearRect(0,0,W,H);
+    P.forEach(p=>{ p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.vx*=.99; p.rot+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c;
+      ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6); ctx.restore(); });
+    if(now-start<2600) requestAnimationFrame(frame); else cv.remove();
+  })(start);
 }
 function setMe(id){ me=id; localStorage.setItem("wc26me_"+ROOM_CODE,id); render(); }
 
@@ -287,6 +340,12 @@ function tabs(){
 function vMatches(main){
   const s=el(`<section><h2 class="sec">Open markets</h2></section>`);
   const open=fixtures.filter(fx=>fx.stage!=="Tournament"&&(fx.markets||[]).some(m=>m.result===null));
+  // knockout-round banner — uses the round of the soonest open knockout game
+  const koOpen=open.filter(isKO).sort((a,b)=>new Date(a.commence_time)-new Date(b.commence_time));
+  if(koOpen.length){
+    const rd=koOpen[0].stage;
+    s.appendChild(el(`<div class="ko-banner"><span class="ic">⚔️</span><div><div class="rd">${rd}</div><div class="tl">${KO_TAGLINE[rd]||"Knockout football"}</div></div></div>`));
+  }
   if(!open.length) s.appendChild(el(`<div class="empty">No open markets yet. The odds sync will fill these in.</div>`));
   open.forEach(fx=>s.appendChild(fxCard(fx)));
   main.appendChild(s);
@@ -300,9 +359,11 @@ function vOverall(main){
 }
 function fxCard(fx){
   const lk=locked(fx); const c=cd(fx.commence_time);
+  const ko=isKO(fx);
   const teamsHtml=fx.stage==="Tournament"?fx.home:`${fx.home} <span style="color:var(--mut)">v</span> ${fx.away}`;
-  const card=el(`<div class="fx"><div class="fx-top">
-      <div><span class="stage">${fx.stage||""}</span><div class="teams">${teamsHtml}</div></div>
+  const stageHtml=fx.stage?`<span class="stage ${ko?"ko":""}">${ko?"⚔️ ":""}${fx.stage}</span>`:"";
+  const card=el(`<div class="fx ${ko?"ko":""}"><div class="fx-top">
+      <div>${stageHtml}<div class="teams">${teamsHtml}</div></div>
       <div class="ko">${lk?`<span class="locked-tag">LOCKED</span>`:`<span class="cd ${c.cls}" data-cd="${fx.commence_time}">${c.txt}</span>`}</div>
     </div></div>`);
   (fx.markets||[]).sort((a,b)=>a.key.localeCompare(b.key)).forEach(mkt=>{
@@ -321,6 +382,9 @@ function fxCard(fx){
   return card;
 }
 const labelFor=(m,k)=>(m.outcomes||[]).find(o=>o.key===k)?.label||k;
+const KO_STAGES=new Set(["Round of 32","Round of 16","Quarter-final","Semi-final","Third place","Final"]);
+const isKO=fx=>KO_STAGES.has(fx.stage);
+const KO_TAGLINE={"Round of 32":"Win or go home","Round of 16":"Last 16 standing","Quarter-final":"The final eight","Semi-final":"One game from the final","Third place":"Bronze on the line","Final":"For all the marbles"};
 
 function slipEl(){
   const {fx,mkt,opt}=slip;
@@ -398,9 +462,11 @@ function vTable(main){
   lb.appendChild(el(`<div class="lb-row ${me==="bookie"?"me":""}" style="border-left:3px solid var(--gold)"><span class="rank" style="font-size:14px">👑</span>
     <div style="flex:1"><div class="lb-name" style="color:var(--gold)">House</div><div class="lb-rec">bookie</div></div>
     <div class="lb-net">${hnStr}</div></div>`));
+  const medals=["🥇","🥈","🥉"];
   rows.forEach((r,i)=>{
     const net=Number(r.net), n=net>=0?`<span class="up">+${net.toFixed(0)}</span>`:`<span class="down">${net.toFixed(0)}</span>`;
-    lb.appendChild(el(`<div class="lb-row ${r.player_id===me?"me":""}"><span class="rank ${i===0?"r1":""}">${i+1}</span>
+    const rankCell=i<3?`<span class="rank medal">${medals[i]}</span>`:`<span class="rank">${i+1}</span>`;
+    lb.appendChild(el(`<div class="lb-row ${r.player_id===me?"me":""} ${i===0?"lead":""}">${rankCell}
       <div style="flex:1"><div class="lb-name">${r.name}</div><div class="lb-rec">${r.wins}W · ${r.losses}L · ${r.open_bets} open</div></div>
       <div class="lb-net">${n}</div></div>`));
   });
