@@ -940,12 +940,15 @@ function vAdmin(main){
   });
   c.insertBefore(pd, c.querySelector("label.fld"));
   s.appendChild(c);
-  // manual settle (non-auto open markets)
-  const manual=[]; fixtures.forEach(fx=>(fx.markets||[]).forEach(m=>{ if(m.result===null && m.auto===false) manual.push({fx,m}); }));
-  const ms=el(`<div class="card"><h2 class="sec">Settle props by hand</h2></div>`);
-  if(!manual.length) ms.appendChild(el(`<p class="hint">Nothing waiting. Standard markets auto-settle from the score.</p>`));
+  // manual settle: custom props (auto=false) + all knockout markets (auto-settle skips KO for ET/pens)
+  const manual=[]; fixtures.forEach(fx=>(fx.markets||[]).forEach(m=>{ if(m.result===null && (m.auto===false || isKO(fx))) manual.push({fx,m}); }));
+  const ms=el(`<div class="card"><h2 class="sec">Settle by hand</h2>
+    <p class="hint" style="margin-bottom:4px">Custom props + every knockout market — knockouts don't auto-settle, so pick the winner on the <b>90-minute result</b> (a draw at 90' = Draw, even if a side advanced on ET/pens).</p></div>`);
+  if(!manual.length) ms.appendChild(el(`<p class="hint">Nothing waiting. Group-stage standard markets auto-settle from the score.</p>`));
   manual.forEach(({fx,m})=>{
-    const row=el(`<div style="margin-top:10px"><div class="b-sub">${fx.home} v ${fx.away}</div><label class="fld">${m.label} — winner</label><div class="opts"></div></div>`);
+    const score=(fx.home_score!=null&&fx.away_score!=null)?` · <b style="color:var(--txt)">${fx.home_score}–${fx.away_score}</b>`:"";
+    const title=fx.stage==="Tournament"?fx.home:`${fx.home} v ${fx.away}`;
+    const row=el(`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="b-sub">${fx.stage||""} · ${title}${score}</div><label class="fld">${m.label} — winner</label><div class="opts"></div></div>`);
     m.outcomes.forEach(o=>{ const b=el(`<button class="opt"><span class="ol">${o.label}</span></button>`);
       b.onclick=async()=>{ if(await adminCall({action:"settle_market",market_id:m.id,result:o.key})) toast("Settled"); };
       row.querySelector(".opts").appendChild(b); });
