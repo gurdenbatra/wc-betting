@@ -385,11 +385,15 @@ function vBracket(main){
     if(!games.length){ if(allowTbd) col.appendChild(el(`<div class="br-tbd">TBD</div>`)); return col; }
     games.forEach(fx=>{
       const hs=fx.home_score, as=fx.away_score, done=hs!=null&&as!=null;
-      const hw=done&&hs>as, aw=done&&as>hs;
+      const adv=fx.winner; // 'home' | 'away' — set by bookie for ET/pens deciders
+      const hw=adv?adv==="home":(done&&hs>as), aw=adv?adv==="away":(done&&as>hs);
+      const when=!done?(locked(fx)?"LOCKED":cd(fx.commence_time).txt)
+        :hs===as?(adv?"WON ON PENS":"AET / pens")
+        :"FULL TIME";
       col.appendChild(el(`<div class="br-m">
         <div class="br-t ${hw?"win":""}"><span class="nm">${fx.home}</span><span class="sc">${done?hs:""}</span></div>
         <div class="br-t ${aw?"win":""}"><span class="nm">${fx.away}</span><span class="sc">${done?as:""}</span></div>
-        <div class="br-when">${done?(hs===as?"AET / pens":"FULL TIME"):(locked(fx)?"LOCKED":cd(fx.commence_time).txt)}</div>
+        <div class="br-when">${when}</div>
       </div>`));
     });
     return col;
@@ -955,6 +959,23 @@ function vAdmin(main){
     ms.appendChild(row);
   });
   s.appendChild(ms);
+  // knockout advancers — for level games, record who went through so the bracket shows a winner
+  const drawn=fixtures.filter(fx=>isKO(fx)&&fx.home_score!=null&&fx.away_score!=null&&fx.home_score===fx.away_score);
+  if(drawn.length){
+    const ac=el(`<div class="card"><h2 class="sec">Knockout advancers</h2>
+      <p class="hint" style="margin-bottom:4px">These ended level — pick who advanced (ET/pens) so the Bracket shows the winner. Doesn't affect bet settlement.</p></div>`);
+    drawn.sort((a,b)=>new Date(b.commence_time)-new Date(a.commence_time)).forEach(fx=>{
+      const row=el(`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="b-sub">${fx.stage||""} · ${fx.home} v ${fx.away} · <b style="color:var(--txt)">${fx.home_score}–${fx.away_score}</b></div><div class="opts"></div></div>`);
+      [["home",fx.home],["away",fx.away]].forEach(([k,nm])=>{
+        const sel=fx.winner===k;
+        const b=el(`<button class="opt ${sel?"win":""}"><span class="ol">${nm}${sel?" ✓":""}</span></button>`);
+        b.onclick=async()=>{ if(await adminCall({action:"set_advancer",fixture_id:fx.id,winner:k})) toast(`${nm} advanced`); };
+        row.querySelector(".opts").appendChild(b);
+      });
+      ac.appendChild(row);
+    });
+    s.appendChild(ac);
+  }
   main.appendChild(s);
 }
 

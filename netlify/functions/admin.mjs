@@ -204,6 +204,19 @@ export default async (req) => {
       return Response.json({ ok: true, created, skipped: PROPS.length - created });
     }
 
+    if (body.action === "set_advancer") {
+      // record who advanced from a level knockout tie (ET/pens) — bracket display only
+      const w = body.winner;
+      if (w !== "home" && w !== "away" && w !== null)
+        return new Response("winner must be 'home', 'away', or null", { status: 400 });
+      const r = await sb(`fixtures?id=eq.${body.fixture_id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ winner: w }),
+      });
+      if (!r.ok) return new Response(await r.text(), { status: 502 });
+      return Response.json({ ok: true });
+    }
+
     if (body.action === "add_fixture") {
       const r = await sb("fixtures", {
         method: "POST",

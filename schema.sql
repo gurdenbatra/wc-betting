@@ -40,6 +40,7 @@ create table if not exists fixtures (
   home_score    int,
   away_score    int,
   settled       boolean default false,
+  winner        text,                                   -- 'home' | 'away' — knockout advancer on ET/pens (bracket display only)
   unique (pool_id, ext_id)
 );
 
