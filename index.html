@@ -756,9 +756,15 @@ function vAction(main){
       const grid=m.querySelector(".action-grid");
 
       (mkt.outcomes||[]).forEach(opt=>{
-        const optBets=byOpt[opt.key]||[]; if(!optBets.length) return;
+        const optBets=byOpt[opt.key]||[];
+        // Settled view shows every outcome (even ones nobody backed) so the odds are visible;
+        // active view only shows outcomes that actually have live bets on them.
+        if(!optBets.length && !settledView) return;
         const winningOpt=settledView&&mkt.result===opt.key;
         const col=el(`<div class="action-col"${winningOpt?' style="border-color:var(--mint)"':""}><div class="action-col-head"><span>${opt.label}</span><span class="ao">${Number(opt.odds).toFixed(2)}</span></div></div>`);
+        if(!optBets.length){
+          col.appendChild(el(`<div class="action-item" style="color:var(--mut);font-weight:400"><span>None</span></div>`));
+        }
         optBets.forEach(b=>{
           const pname=players.find(p=>p.id===b.player_id)?.name||"?";
           const mark=settledView?(b.status==="won"?` style="color:var(--mint)"`:b.status==="lost"?` style="color:var(--red)"`:""):"";
