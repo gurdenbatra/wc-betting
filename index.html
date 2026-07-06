@@ -368,7 +368,13 @@ function vMatches(main){
 }
 function vOverall(main){
   const s=el(`<section><h2 class="sec">Tournament bets</h2></section>`);
-  const overall=fixtures.filter(fx=>fx.stage==="Tournament");
+  const overall=fixtures.filter(fx=>fx.stage==="Tournament")
+    // open (still bettable) markets first, locked ones sink to the bottom
+    .sort((a,b)=>{
+      const al=locked(a), bl=locked(b);
+      if(al!==bl) return al?1:-1;
+      return new Date(a.commence_time)-new Date(b.commence_time);
+    });
   if(!overall.length) s.appendChild(el(`<div class="empty">No tournament markets yet — create the WC Winner market from the Admin tab.</div>`));
   overall.forEach(fx=>s.appendChild(fxCard(fx)));
   main.appendChild(s);
