@@ -204,6 +204,60 @@ export default async (req) => {
       return Response.json({ ok: true, created, skipped: PROPS.length - created });
     }
 
+    if (body.action === "create_top_scorer") {
+      // Golden Boot outright — preset "best guess" odds. Pass body.players ([{name,odds}]) to override.
+      const DEFAULT_PLAYERS = [
+        { name: "Kylian Mbappé",     odds: 4.50 },
+        { name: "Erling Haaland",    odds: 5.50 },
+        { name: "Harry Kane",        odds: 6.00 },
+        { name: "Lionel Messi",      odds: 8.00 },
+        { name: "Ousmane Dembélé",   odds: 9.00 },
+        { name: "Jude Bellingham",   odds: 11.00 },
+        { name: "Cristiano Ronaldo", odds: 13.00 },
+        { name: "Mikel Oyarzabal",   odds: 15.00 },
+        { name: "Folarin Balogun",   odds: 17.00 },
+        { name: "Ismael Saibari",    odds: 23.00 },
+        { name: "Johan Manzambi",    odds: 29.00 },
+      ];
+      const outcomes = (body.players || DEFAULT_PLAYERS).map((p) => ({
+        key: p.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+          .replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""),
+        label: p.name,
+        odds: p.odds,
+      }));
+
+      const upsertFx = await sb("fixtures?on_conflict=pool_id,ext_id", {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+        body: JSON.stringify({
+          pool_id: POOL_ID,
+          ext_id: "wc2026_topscorer",
+          home: "Golden Boot",
+          away: "Top Scorer",
+          stage: "Tournament",
+          commence_time: "2026-07-09T00:00:00Z", // locks before the quarter-finals
+        }),
+      });
+      if (!upsertFx.ok) return new Response(`fixture upsert: ${await upsertFx.text()}`, { status: 502 });
+      const [fx] = await upsertFx.json();
+
+      const mRes = await sb(`markets?fixture_id=eq.${fx.id}&key=eq.topscorer&select=id`);
+      const existing = (await mRes.json())[0];
+      if (existing) {
+        await sb(`markets?id=eq.${existing.id}`, { method: "PATCH", body: JSON.stringify({ outcomes }) });
+        return Response.json({ ok: true, players: outcomes.length, created: false });
+      }
+      const ins = await sb("markets", {
+        method: "POST",
+        body: JSON.stringify({
+          fixture_id: fx.id, key: "topscorer", label: "🥇 Top goalscorer of the World Cup?",
+          point: null, auto: false, outcomes,
+        }),
+      });
+      if (!ins.ok) return new Response(`market insert: ${await ins.text()}`, { status: 502 });
+      return Response.json({ ok: true, players: outcomes.length, created: true });
+    }
+
     if (body.action === "set_advancer") {
       // record who advanced from a level knockout tie (ET/pens) — bracket display only
       const w = body.winner;

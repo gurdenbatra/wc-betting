@@ -347,7 +347,7 @@ function header(){
   return h;
 }
 function tabs(){
-  const t=[["matches","Matches"],["action","Action"],["mybets","My bets"],["table","Table"],["bracket","Bracket"],["stats","Stats"],["admin","Admin"]];
+  const t=[["matches","Matches"],["overall","Overall"],["action","Action"],["mybets","My bets"],["table","Table"],["bracket","Bracket"],["stats","Stats"],["admin","Admin"]];
   const n=el(`<nav class="tabs"><div class="wrap">${t.map(([k,l])=>`<button class="tab ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</div></nav>`);
   n.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
   requestAnimationFrame(()=>n.querySelector(".tab.on")?.scrollIntoView({inline:"center",block:"nearest"}));
@@ -846,6 +846,25 @@ function vAdmin(main){
   settleCard.appendChild(el(`<p class="hint" style="margin:8px 0 10px">Tournament props: adds 7 Polymarket-inspired yes/no bets (Neymar, Ronaldo, Messi, Trump). Betting locks at WC Final. Settle each by hand. Safe to re-run — skips already-created markets.</p>`));
   settleCard.appendChild(el(`<button class="mini ghost" id="do-props" style="width:100%">🎭 Create Tournament Props</button>`));
   settleCard.appendChild(el(`<p class="hint" id="props-res" style="margin-top:6px;min-height:14px"></p>`));
+  settleCard.appendChild(el(`<p class="hint" style="margin:8px 0 10px">Golden Boot: top-scorer outright with 11 contenders at preset odds. Betting locks before the quarter-finals (9 Jul). Settle by hand. Re-run to refresh odds.</p>`));
+  settleCard.appendChild(el(`<button class="mini ghost" id="do-scorer" style="width:100%">🥇 Create Top Scorer market</button>`));
+  settleCard.appendChild(el(`<p class="hint" id="scorer-res" style="margin-top:6px;min-height:14px"></p>`));
+  settleCard.querySelector("#do-scorer").onclick=async()=>{
+    const btn=settleCard.querySelector("#do-scorer"), res=settleCard.querySelector("#scorer-res");
+    btn.textContent="Creating…"; btn.disabled=true;
+    try{
+      const r=await fetch(`${FUNCTIONS_BASE}/admin`,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"create_top_scorer",token:adminTok})});
+      const txt=await r.text();
+      const j=(()=>{try{return JSON.parse(txt);}catch{return {};}})();
+      res.textContent=r.ok
+        ?`${j.created?"Created":"Refreshed"} — ${j.players} contenders`
+        :`Error ${r.status}: ${txt}`;
+      if(r.ok) loadAll();
+    }catch(e){ res.textContent=String(e); }
+    btn.textContent="🥇 Create Top Scorer market"; btn.disabled=false;
+  };
   settleCard.querySelector("#do-props").onclick=async()=>{
     const btn=settleCard.querySelector("#do-props"), res=settleCard.querySelector("#props-res");
     btn.textContent="Creating…"; btn.disabled=true;
