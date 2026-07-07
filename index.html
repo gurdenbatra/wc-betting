@@ -75,7 +75,10 @@
   .stake-in{display:flex;gap:8px;align-items:center;margin:10px 0}
   .stake-in input{flex:1;font-family:var(--mono);font-size:16px;padding:10px 12px;border-radius:8px;border:1px solid #c9bfa6;background:#fff;color:#1c241f}
   .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
-  .chip{font-family:var(--mono);font-size:12px;border:1px solid #c9bfa6;background:#fff;border-radius:999px;padding:5px 10px;color:#3a463e}
+  /* base chip = dark filter/toggle pill (My bets, Action). Slip amount chips overridden below. */
+  .chip{font-family:var(--display);font-weight:600;font-size:14px;text-transform:uppercase;letter-spacing:.03em;border:1px solid var(--line2);background:var(--panel2);border-radius:999px;padding:6px 14px;color:var(--mut);transition:color .15s,border-color .15s}
+  .chip:hover{color:var(--txt);border-color:var(--gold)}
+  .chips .chip{font-family:var(--mono);font-weight:400;font-size:12px;text-transform:none;letter-spacing:normal;border:1px solid #c9bfa6;background:#fff;padding:5px 10px;color:#3a463e}
   .ret{font-family:var(--mono);font-size:22px;font-weight:700}
   .tk-actions{display:flex;gap:8px;margin-top:12px}
   .btn{flex:1;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:600}
@@ -134,6 +137,19 @@
   .legend{display:flex;flex-wrap:wrap;gap:9px 12px;margin-top:13px}
   .legend span{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--mut)}
   .legend i{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  /* staggered entrance — plays on tab change / first load, scoped so it never fires on background polls */
+  @media (prefers-reduced-motion:no-preference){
+    @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    @keyframes heroPop{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+    .wrap.enter section>*{animation:rise .42s cubic-bezier(.22,1,.36,1) both}
+    .wrap.enter section>*:nth-child(1){animation-delay:.02s}
+    .wrap.enter section>*:nth-child(2){animation-delay:.08s}
+    .wrap.enter section>*:nth-child(3){animation-delay:.14s}
+    .wrap.enter section>*:nth-child(4){animation-delay:.20s}
+    .wrap.enter section>*:nth-child(5){animation-delay:.26s}
+    .wrap.enter section>*:nth-child(n+6){animation-delay:.30s}
+    .wrap.enter .ko-banner{animation:heroPop .5s cubic-bezier(.22,1,.36,1) .06s both}
+  }
   /* knockout glow-up (modifier is .kn — NOT .ko, which is the countdown box) */
   .fx.kn{position:relative;border-color:#4a3a22;background:linear-gradient(180deg,rgba(232,178,58,.05),var(--panel) 70px)}
   .fx.kn::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,var(--gold),var(--red))}
@@ -192,7 +208,7 @@ const sbc = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById("app");
 
 let pool=null, players=[], fixtures=[], bets=[], standings=[];
-let me=null, tab="matches", slip=null, adminTok=null, betFilter="all", actionView="active";
+let me=null, tab="matches", slip=null, adminTok=null, betFilter="all", actionView="active", lastTab=null;
 
 async function loadAll(){
   const { data:p } = await sbc.from("pools").select("*").eq("room_code",ROOM_CODE).single();
@@ -299,7 +315,10 @@ function render(){
   app.innerHTML="";
   app.appendChild(header());
   app.appendChild(tabs());
-  const main=el(`<div class="wrap"></div>`);
+  // "enter" triggers the staggered reveal only on real tab changes — not on the
+  // 20s background poll (same tab) which would otherwise re-animate every refresh.
+  const tabChanged=tab!==lastTab; lastTab=tab;
+  const main=el(`<div class="wrap${tabChanged?" enter":""}"></div>`);
   ({matches:vMatches,overall:vOverall,bracket:vBracket,mybets:vMyBets,table:vTable,stats:vStats,action:vAction,admin:vAdmin}[tab])(main);
   app.appendChild(main);
   if(slip) app.appendChild(slipEl());
