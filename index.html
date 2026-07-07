@@ -84,12 +84,12 @@
   .lb-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
   .lb-row:last-child{border-bottom:none} .lb-row.me{background:var(--panel2)}
   .lb-row>div{min-width:0}
-  .rank{font-family:var(--mono);font-size:13px;color:var(--mut);width:22px;flex-shrink:0} .rank.r1{color:var(--gold)}
-  .lb-name{font-weight:600;overflow-wrap:anywhere} .lb-rec{font-family:var(--mono);font-size:11px;color:var(--mut)}
-  .lb-net{font-family:var(--mono);font-size:16px;text-align:right;flex-shrink:0} .up{color:var(--mint)} .down{color:var(--red)}
+  .rank{font-family:var(--display);font-weight:700;font-size:17px;color:var(--mut);width:24px;flex-shrink:0} .rank.r1{color:var(--gold)}
+  .lb-name{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.01em;overflow-wrap:anywhere} .lb-rec{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .lb-net{font-family:var(--display);font-weight:800;font-size:21px;text-align:right;flex-shrink:0;letter-spacing:.01em} .up{color:var(--mint)} .down{color:var(--red)}
   .bet{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
   .bet>div{min-width:0}
-  .b-pick{font-size:14px;font-weight:600;overflow-wrap:anywhere} .b-sub{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:2px;overflow-wrap:anywhere}
+  .b-pick{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:.01em;overflow-wrap:anywhere} .b-sub{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:2px;overflow-wrap:anywhere}
   .b-stat{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid var(--line2);flex-shrink:0}
   .b-stat.pending{color:var(--gold);border-color:var(--gold)} .b-stat.won{color:var(--mint);border-color:var(--mint)} .b-stat.lost{color:var(--red);border-color:var(--red)}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
@@ -104,29 +104,30 @@
   .hint{font-size:12px;color:var(--mut);margin:6px 0 0} .empty{color:var(--mut);font-size:14px;text-align:center;padding:40px 0;font-family:var(--mono)}
   .action-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .action-col{flex:1;min-width:90px;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:10px 12px}
-  .action-col-head{font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
-  .action-col-head>span:first-child{min-width:0;overflow-wrap:anywhere;line-height:1.2}
-  .action-col-head .ao{color:var(--gold);font-weight:600;flex-shrink:0}
-  .action-item{font-size:13px;font-weight:600;padding:3px 0;display:flex;justify-content:space-between;align-items:baseline}
+  .action-col-head{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.01em;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:8px;display:flex;flex-direction:column;gap:1px}
+  .action-col-head>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.15}
+  .action-col-head .ao{font-family:var(--mono);color:var(--gold);font-weight:700;font-size:13px}
+  .action-item{font-family:var(--display);font-size:15px;font-weight:600;padding:3px 0;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
   .action-item.mine{color:var(--gold)}
-  .action-item .aps{font-family:var(--mono);font-size:11px;color:var(--mut);font-weight:400}
+  .action-item>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .action-item .aps{font-family:var(--mono);font-size:11px;color:var(--mut);font-weight:400;flex-shrink:0}
   /* stats / visualisations */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;min-width:0}
   .stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
-  .stat .v{font-family:var(--mono);font-weight:700;font-size:22px;margin-top:6px;overflow-wrap:anywhere;line-height:1.1}
+  .stat .v{font-family:var(--display);font-weight:800;font-size:30px;margin-top:4px;overflow-wrap:anywhere;line-height:1}
   .stat .s{font-size:11px;color:var(--mut);margin-top:3px;overflow-wrap:anywhere}
   .viz{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-bottom:16px}
-  .viz h3{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 14px;font-weight:600}
+  .viz h3{font-family:var(--display);font-size:17px;letter-spacing:.04em;text-transform:uppercase;color:var(--txt);margin:0 0 14px;font-weight:700}
   .dbar{display:flex;align-items:center;gap:10px;margin-bottom:9px}
-  .dbar-name{width:62px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13px}
+  .dbar-name{width:66px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--display);font-weight:700;font-size:15px}
   .dbar-track{flex:1;position:relative;height:18px;background:var(--panel2);border-radius:5px;min-width:0}
   .dbar-track::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line2)}
   .dbar-fill{position:absolute;top:2px;bottom:2px;border-radius:4px;max-width:50%}
   .dbar-fill.pos{left:50%;background:var(--mint)} .dbar-fill.neg{right:50%;background:var(--red)}
   .dbar-val{width:50px;flex-shrink:0;text-align:right;font-family:var(--mono);font-size:13px}
   .wr{display:flex;align-items:center;gap:10px;margin-bottom:9px}
-  .wr-name{width:62px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13px}
+  .wr-name{width:66px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--display);font-weight:700;font-size:15px}
   .wr-track{flex:1;height:18px;background:var(--panel2);border-radius:5px;overflow:hidden;min-width:0}
   .wr-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--mint));border-radius:5px;min-width:2px}
   .wr-val{width:74px;flex-shrink:0;text-align:right;font-family:var(--mono);font-size:11px;color:var(--mut)}
