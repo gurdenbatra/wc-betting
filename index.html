@@ -210,17 +210,30 @@ const app = document.getElementById("app");
 let pool=null, players=[], fixtures=[], bets=[], standings=[];
 let me=null, tab="matches", slip=null, adminTok=null, betFilter="all", actionView="active", lastTab=null;
 
+// Supabase caps a single select at 1000 rows — page through so every bet is loaded.
+async function fetchAllBets(poolId){
+  const PAGE=1000; let from=0, all=[];
+  for(;;){
+    const { data, error } = await sbc.from("bets").select("*").eq("pool_id",poolId)
+      .order("created_at",{ascending:true}).range(from, from+PAGE-1);
+    if(error||!data||!data.length) break;
+    all=all.concat(data);
+    if(data.length<PAGE) break;
+    from+=PAGE;
+  }
+  return all;
+}
 async function loadAll(){
   const { data:p } = await sbc.from("pools").select("*").eq("room_code",ROOM_CODE).single();
   pool = p;
   if(!pool){ app.innerHTML = `<div class="gate"><h2 class="sec">No pool "${ROOM_CODE}"</h2><p class="hint">Run schema.sql and check the room code in this file.</p></div>`; return; }
-  const [pl,fx,bt,st] = await Promise.all([
+  const [pl,fx,st,allBets] = await Promise.all([
     sbc.from("players").select("*").eq("pool_id",pool.id).order("name"),
     sbc.from("fixtures").select("*, markets(*)").eq("pool_id",pool.id).order("commence_time"),
-    sbc.from("bets").select("*").eq("pool_id",pool.id),
     sbc.from("standings").select("*").eq("pool_id",pool.id),
+    fetchAllBets(pool.id),
   ]);
-  players=pl.data||[]; fixtures=fx.data||[]; bets=bt.data||[]; standings=st.data||[];
+  players=pl.data||[]; fixtures=fx.data||[]; standings=st.data||[]; bets=allBets;
   const saved=localStorage.getItem("wc26me_"+ROOM_CODE);
   if(saved && (saved==="bookie" || players.find(x=>x.id===saved))) me=saved;
   if(!me){
