@@ -50,10 +50,12 @@ export default async (req) => {
         method: "PATCH",
         body: JSON.stringify({ result: body.result, settled: true }),
       });
-      await sb(`bets?market_id=eq.${body.market_id}&status=eq.pending&option_key=eq.${body.result}`, {
+      // Re-grade EVERY bet on this market by the result (not just pending ones) so a
+      // mis-settle can be corrected simply by settling again with the right outcome.
+      await sb(`bets?market_id=eq.${body.market_id}&option_key=eq.${body.result}`, {
         method: "PATCH", body: JSON.stringify({ status: "won" }),
       });
-      await sb(`bets?market_id=eq.${body.market_id}&status=eq.pending`, {
+      await sb(`bets?market_id=eq.${body.market_id}&option_key=neq.${body.result}`, {
         method: "PATCH", body: JSON.stringify({ status: "lost" }),
       });
       return Response.json({ ok: true });
