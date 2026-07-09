@@ -374,7 +374,7 @@ function header(){
   return h;
 }
 function tabs(){
-  const t=[["matches","Matches"],["overall","Overall"],["action","Action"],["mybets","My bets"],["table","Table"],["bracket","Bracket"],["stats","Stats"],["admin","Admin"]];
+  const t=[["matches","Matches"],["action","Action"],["mybets","My bets"],["table","Table"],["bracket","Bracket"],["stats","Stats"],["admin","Admin"]];
   const n=el(`<nav class="tabs"><div class="wrap">${t.map(([k,l])=>`<button class="tab ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</div></nav>`);
   n.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
   requestAnimationFrame(()=>n.querySelector(".tab.on")?.scrollIntoView({inline:"center",block:"nearest"}));
