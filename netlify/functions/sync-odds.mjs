@@ -74,11 +74,19 @@ export default async (req) => {
     for (const m of await mRes.json()) existing[`${m.fixture_id}:${m.key}`] = { id: m.id, result: m.result };
   }
 
-  // which markets already have bets (only relevant in refresh mode)
+  // which markets already have bets (only relevant in refresh mode).
+  // MUST page through — Supabase caps a select at 1000 rows, and missing a bet here
+  // would let us re-price (overwrite) a market that actually has bets on it.
   let betMktIds = new Set();
   if (refresh && ids.length) {
-    const bRes = await sb(`bets?pool_id=eq.${POOL_ID}&select=market_id`);
-    betMktIds = new Set((await bRes.json()).map((b) => b.market_id));
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const bRes = await sb(`bets?pool_id=eq.${POOL_ID}&select=market_id&order=id.asc&limit=${PAGE}&offset=${from}`);
+      const rows = await bRes.json();
+      if (!Array.isArray(rows) || !rows.length) break;
+      rows.forEach((b) => betMktIds.add(b.market_id));
+      if (rows.length < PAGE) break;
+    }
   }
   // a market is re-priceable if it's open (no result) and has no bets
   const canReprice = (m) => m && m.result === null && !betMktIds.has(m.id);
