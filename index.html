@@ -646,7 +646,7 @@ function myWrapped(pid){
   // biggest win / worst loss — group split stakes on the same pick
   const grp={};
   settled.forEach(b=>{ const k=`${b.market_id}|${b.option_key}`;
-    if(!grp[k]) grp[k]={pick:b.label,mkt:mLabel(b),status:b.status,stake:0,profit:0};
+    if(!grp[k]) grp[k]={pick:b.label,mkt:mLabel(b),fx:fxLabel(b),status:b.status,stake:0,profit:0};
     grp[k].stake+=Number(b.stake); if(b.status==="won") grp[k].profit+=profitOf(b); });
   const gl=Object.values(grp);
   const topWin=gl.filter(g=>g.status==="won").sort((a,b)=>b.profit-a.profit)[0];
@@ -686,12 +686,12 @@ function myWrapped(pid){
   </div>`));
 
   const cards=[
-    ["🔥 Biggest win", topWin?`+${topWin.profit.toFixed(0)}`:"—", topWin?topWin.pick:"no wins", topWin?"var(--mint)":"var(--mut)"],
-    ["💀 Worst loss", topLoss?`-${topLoss.stake.toFixed(0)}`:"—", topLoss?topLoss.pick:"no losses", topLoss?"var(--red)":"var(--mut)"],
+    ["🔥 Biggest win", topWin?`+${topWin.profit.toFixed(0)}`:"—", topWin?`${topWin.pick} · ${topWin.fx}`:"no wins", topWin?"var(--mint)":"var(--mut)"],
+    ["💀 Worst loss", topLoss?`-${topLoss.stake.toFixed(0)}`:"—", topLoss?`${topLoss.pick} · ${topLoss.fx}`:"no losses", topLoss?"var(--red)":"var(--mut)"],
     ["🎯 Win rate", settled.length?`${Math.round(winRate*100)}%`:"—", `${wins.length}/${settled.length} settled`, "var(--txt)"],
-    ["💪 Boldest bet", `${Number(boldest.stake).toFixed(0)}`, boldest.label, "var(--txt)"],
+    ["💪 Boldest bet", `${Number(boldest.stake).toFixed(0)}`, `${boldest.label} · ${fxLabel(boldest)}`, "var(--txt)"],
     ["🎲 Avg odds", avgOdds.toFixed(2), persona.t, "var(--txt)"],
-    ["🍀 Luckiest", luckiest?Number(luckiest.odds).toFixed(2):"—", luckiest?luckiest.label:"—", "var(--txt)"],
+    ["🍀 Luckiest", luckiest?Number(luckiest.odds).toFixed(2):"—", luckiest?`${luckiest.label} · ${fxLabel(luckiest)}`:"—", "var(--txt)"],
   ];
   box.appendChild(el(`<div class="stat-grid">${cards.map(([k,v,sub,c])=>
     `<div class="stat"><div class="k">${k}</div><div class="v" style="font-size:${String(v).length>4?22:26}px;color:${c}">${v}</div><div class="s">${sub}</div></div>`).join("")}</div>`));
