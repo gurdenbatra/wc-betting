@@ -137,6 +137,25 @@
   .legend{display:flex;flex-wrap:wrap;gap:9px 12px;margin-top:13px}
   .legend span{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--mut)}
   .legend i{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  /* my wrapped (personal end-of-tournament recap) */
+  .wrapped{position:relative;overflow:hidden;background:linear-gradient(155deg,rgba(232,178,58,.16),rgba(98,199,154,.06) 42%,var(--panel) 78%);border:1px solid #4a3a22;border-radius:16px;padding:18px 16px;margin-bottom:12px}
+  .wrapped::after{content:"";position:absolute;top:0;bottom:0;left:0;width:4px;background:linear-gradient(180deg,var(--gold),var(--mint))}
+  .wrapped .wh{font-family:var(--display);font-weight:800;font-size:27px;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+  .wrapped .wsub{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.05em;text-transform:uppercase;margin-top:5px}
+  .wrapped .wnet{font-family:var(--display);font-weight:800;font-size:46px;line-height:1;margin:16px 0 2px}
+  .wrap-insight{font-size:13.5px;line-height:1.5;color:var(--txt);background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:11px 13px;margin-bottom:8px}
+  .wrap-insight b{color:var(--gold);font-weight:700}
+  details.wrap-all{margin-bottom:16px}
+  details.wrap-all>summary{font-family:var(--mono);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);cursor:pointer;padding:10px 0;list-style:none}
+  details.wrap-all>summary::-webkit-details-marker{display:none}
+  details.wrap-all>summary::before{content:"▸ ";color:var(--gold)}
+  details.wrap-all[open]>summary::before{content:"▾ "}
+  .wrap-bet{display:flex;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .wrap-bet:last-child{border-bottom:none}
+  .wrap-bet .wl{flex:1;min-width:0}
+  .wrap-bet .wp{font-family:var(--display);font-weight:600;font-size:15px;overflow-wrap:anywhere}
+  .wrap-bet .wm{font-family:var(--mono);font-size:10px;color:var(--mut);margin-top:1px;overflow-wrap:anywhere}
+  .wrap-bet .wo{font-family:var(--mono);font-size:13px;flex-shrink:0;text-align:right;white-space:nowrap}
   /* staggered entrance — plays on tab change / first load, scoped so it never fires on background polls */
   @media (prefers-reduced-motion:no-preference){
     @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
@@ -604,9 +623,102 @@ const PALETTE=["#e8b23a","#62c79a","#5aa9e6","#c792ea","#f78c6c","#89ddff","#f07
 const profitOf=b=>Number(b.stake)*(Number(b.odds)-1);
 const pNameById=id=>players.find(p=>p.id===id)?.name||"?";
 
+/* personal end-of-tournament recap for the logged-in player */
+function myWrapped(pid){
+  const mine=bets.filter(b=>b.player_id===pid);
+  if(!mine.length) return null;
+  const name=pNameById(pid);
+  const mktById={},fxById={};
+  fixtures.forEach(f=>{ fxById[f.id]=f; (f.markets||[]).forEach(m=>mktById[m.id]=m); });
+  const mLabel=b=>mktById[b.market_id]?.label||"—";
+  const fxLabel=b=>{ const f=fxById[b.fixture_id]; return f?(f.stage==="Tournament"?f.home:`${f.home} v ${f.away}`):""; };
+
+  const settled=mine.filter(b=>b.status==="won"||b.status==="lost");
+  const wins=mine.filter(b=>b.status==="won");
+  const losses=mine.filter(b=>b.status==="lost");
+  const staked=mine.reduce((a,b)=>a+Number(b.stake),0);
+  const netN=(()=>{ const r=standings.find(x=>x.player_id===pid);
+    return r?Number(r.net):wins.reduce((a,b)=>a+profitOf(b),0)-losses.reduce((a,b)=>a+Number(b.stake),0); })();
+  const roi=staked?netN/staked*100:0;
+  const avgOdds=mine.length?mine.reduce((a,b)=>a+Number(b.odds),0)/mine.length:0;
+  const winRate=settled.length?wins.length/settled.length:0;
+
+  // biggest win / worst loss — group split stakes on the same pick
+  const grp={};
+  settled.forEach(b=>{ const k=`${b.market_id}|${b.option_key}`;
+    if(!grp[k]) grp[k]={pick:b.label,mkt:mLabel(b),status:b.status,stake:0,profit:0};
+    grp[k].stake+=Number(b.stake); if(b.status==="won") grp[k].profit+=profitOf(b); });
+  const gl=Object.values(grp);
+  const topWin=gl.filter(g=>g.status==="won").sort((a,b)=>b.profit-a.profit)[0];
+  const topLoss=gl.filter(g=>g.status==="lost").sort((a,b)=>b.stake-a.stake)[0];
+  const boldest=mine.reduce((m,b)=>Number(b.stake)>Number(m.stake)?b:m,mine[0]);
+  const luckiest=wins.length?wins.reduce((m,b)=>Number(b.odds)>Number(m.odds)?b:m,wins[0]):null;
+
+  // favourite market (collapse O/U lines together)
+  const mktCount={}; mine.forEach(b=>{ const l=mLabel(b).replace(/O\/U [\d.]+/,"O/U"); mktCount[l]=(mktCount[l]||0)+1; });
+  const favMkt=Object.entries(mktCount).sort((a,b)=>b[1]-a[1])[0];
+
+  // persona by average odds
+  let persona;
+  if(avgOdds<1.8) persona={t:"The Banker",d:"you stacked short favourites and trusted the chalk"};
+  else if(avgOdds<2.8) persona={t:"The Balanced Bettor",d:"a measured mix of safe picks and value"};
+  else if(avgOdds<4.5) persona={t:"The Risk-Taker",d:"you leaned into prices most wouldn't touch"};
+  else persona={t:"The Longshot Hunter",d:"you chased the big odds all tournament"};
+
+  const ins=[];
+  ins.push(`You bet like <b>${persona.t}</b> — ${persona.d} (avg ${avgOdds.toFixed(2)} odds).`);
+  if(favMkt) ins.push(`Your go-to was <b>${favMkt[0]}</b> — ${favMkt[1]} of your ${mine.length} bets.`);
+  if(settled.length){
+    if(winRate>=0.55&&netN<0) ins.push(`You landed <b>${Math.round(winRate*100)}%</b> of your bets yet finished down — the losers were staked too heavy. Size those down next cup. 📉`);
+    else if(winRate<0.4&&netN>0) ins.push(`Only <b>${Math.round(winRate*100)}%</b> hit, but you're still green — a few juicy prices carried you. 🎯`);
+    else if(netN>0) ins.push(`Up <b>+${netN.toFixed(0)}</b> at a <b>${Math.round(winRate*100)}%</b> strike rate — a genuinely sharp tournament. 👏`);
+    else ins.push(`Down <b>${netN.toFixed(0)}</b> this run — the house edge is real. Always the next cup. 🎰`);
+  }
+  if(luckiest&&Number(luckiest.odds)>=4) ins.push(`Luckiest hit: <b>${luckiest.label}</b> @ ${Number(luckiest.odds).toFixed(2)} came in. 🍀`);
+
+  const box=el(`<div></div>`);
+  box.appendChild(el(`<h2 class="sec">🎁 ${name}'s Wrapped</h2>`));
+  box.appendChild(el(`<div class="wrapped">
+    <div class="wh">World Cup 2026</div>
+    <div class="wsub">${mine.length} bets · ${staked.toFixed(0)} pts staked</div>
+    <div class="wnet" style="color:${netN>=0?"var(--mint)":"var(--red)"}">${netN>=0?"+":""}${netN.toFixed(0)}</div>
+    <div class="wsub" style="margin-top:0">net points · ${roi>=0?"+":""}${roi.toFixed(0)}% ROI</div>
+  </div>`));
+
+  const cards=[
+    ["🔥 Biggest win", topWin?`+${topWin.profit.toFixed(0)}`:"—", topWin?topWin.pick:"no wins", topWin?"var(--mint)":"var(--mut)"],
+    ["💀 Worst loss", topLoss?`-${topLoss.stake.toFixed(0)}`:"—", topLoss?topLoss.pick:"no losses", topLoss?"var(--red)":"var(--mut)"],
+    ["🎯 Win rate", settled.length?`${Math.round(winRate*100)}%`:"—", `${wins.length}/${settled.length} settled`, "var(--txt)"],
+    ["💪 Boldest bet", `${Number(boldest.stake).toFixed(0)}`, boldest.label, "var(--txt)"],
+    ["🎲 Avg odds", avgOdds.toFixed(2), persona.t, "var(--txt)"],
+    ["🍀 Luckiest", luckiest?Number(luckiest.odds).toFixed(2):"—", luckiest?luckiest.label:"—", "var(--txt)"],
+  ];
+  box.appendChild(el(`<div class="stat-grid">${cards.map(([k,v,sub,c])=>
+    `<div class="stat"><div class="k">${k}</div><div class="v" style="font-size:${String(v).length>4?22:26}px;color:${c}">${v}</div><div class="s">${sub}</div></div>`).join("")}</div>`));
+
+  ins.forEach(t=>box.appendChild(el(`<div class="wrap-insight">${t}</div>`)));
+
+  // full bet log (collapsible), newest first
+  const ordered=[...mine].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const det=el(`<details class="wrap-all"><summary>All ${mine.length} bets</summary></details>`);
+  ordered.forEach(b=>{
+    const st=b.status, od=Number(b.odds), stk=Number(b.stake);
+    const res=st==="won"?`<span style="color:var(--mint)">+${(stk*(od-1)).toFixed(0)}</span>`
+      :st==="lost"?`<span style="color:var(--red)">-${stk.toFixed(0)}</span>`
+      :`<span style="color:var(--gold)">pending</span>`;
+    det.appendChild(el(`<div class="wrap-bet"><div class="wl"><div class="wp">${b.label}</div><div class="wm">${fxLabel(b)} · ${mLabel(b)} · ${stk.toFixed(0)} @ ${od.toFixed(2)}</div></div><div class="wo">${res}</div></div>`));
+  });
+  box.appendChild(det);
+  return box;
+}
+
 function vStats(main){
-  const s=el(`<section><h2 class="sec">Stats &amp; visualisations</h2></section>`);
-  if(!bets.length){ s.appendChild(el(`<div class="empty">No bets yet — stats appear once the action starts.</div>`)); main.appendChild(s); return; }
+  const s=el(`<section></section>`);
+  if(!bets.length){ s.appendChild(el(`<h2 class="sec">Stats</h2>`)); s.appendChild(el(`<div class="empty">No bets yet — stats appear once the action starts.</div>`)); main.appendChild(s); return; }
+
+  // ---- My Wrapped (personal recap) — players only ----
+  if(me&&me!=="bookie"){ const w=myWrapped(me); if(w) s.appendChild(w); }
+  s.appendChild(el(`<h2 class="sec">Pool stats</h2>`));
 
   // per-player enriched stats (only players who've bet)
   const stat=standings.map((r,i)=>{
